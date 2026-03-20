@@ -174,6 +174,33 @@ body.light .sf-btn.active{background:rgba(0,119,170,.08);}
 .qr-download-btn{padding:10px 20px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:3px;cursor:pointer;transition:all .2s;}
 .qr-download-btn:hover{background:var(--cyan);color:var(--bg);}
 
+/* PIN MODAL */
+.pin-overlay{position:fixed;inset:0;background:rgba(6,11,16,.97);z-index:2000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
+.pin-overlay.open{display:flex;}
+.pin-box{background:var(--surface);border:1px solid var(--cyan);box-shadow:0 0 60px rgba(0,229,255,.2);padding:32px 28px;width:100%;max-width:340px;animation:modalIn .25s ease;text-align:center;}
+.pin-lock-icon{font-size:36px;margin-bottom:12px;}
+.pin-title{font-family:var(--mono);font-size:13px;letter-spacing:3px;color:var(--cyan);margin-bottom:4px;}
+.pin-subtitle{font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:24px;letter-spacing:2px;}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:24px;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:all .15s;}
+.pin-dot.filled{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 8px rgba(0,229,255,.5);}
+.pin-dot.error{background:var(--red);border-color:var(--red);animation:shake .3s ease;}
+.pin-dot.success{background:var(--green);border-color:var(--green);}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:240px;margin:0 auto 16px;}
+.pin-key{padding:16px;background:transparent;border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:18px;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent;}
+.pin-key:hover,.pin-key:active{background:rgba(0,229,255,.1);border-color:var(--cyan);color:var(--cyan);}
+.pin-key.wide{grid-column:span 2;}
+.pin-key.del{font-size:14px;}
+.pin-error-msg{font-family:var(--mono);font-size:11px;color:var(--red);letter-spacing:2px;min-height:18px;margin-bottom:8px;}
+.pin-cancel-btn{font-family:var(--mono);font-size:10px;color:var(--muted);background:transparent;border:none;cursor:pointer;letter-spacing:2px;padding:8px;}
+.pin-cancel-btn:hover{color:var(--red);}
+.pin-change-btn{font-family:var(--mono);font-size:9px;color:var(--muted);background:transparent;border:none;cursor:pointer;letter-spacing:1px;padding:4px;text-decoration:underline;margin-top:4px;}
+.pin-change-btn:hover{color:var(--cyan);}
+/* Lock icon in header */
+.lock-status{font-size:14px;cursor:pointer;flex-shrink:0;opacity:.7;transition:opacity .2s;}
+.lock-status:hover{opacity:1;}
+
 /* MODAL OVERLAY */
 .modal-overlay{position:fixed;inset:0;background:rgba(6,11,16,.92);z-index:1000;display:none;align-items:flex-end;justify-content:center;padding:0;backdrop-filter:blur(4px);}
 .modal-overlay.open{display:flex;}
@@ -311,6 +338,7 @@ body.light .sf-btn.active{background:rgba(0,119,170,.08);}
     <button class="tool-btn" onclick="document.getElementById('import-input').click()">⬇ IMPORT</button>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
     <button class="tool-btn theme-btn" id="theme-btn" onclick="toggleTheme()" title="Changer le thème">🌙</button>
+    <button class="tool-btn theme-btn" id="lock-btn" onclick="requirePIN(lockApp)" title="Verrouiller / Paramètres PIN">🔓</button>
   </div>
 
   <div class="section-title">TAGS ENREGISTRÉS</div>
@@ -439,6 +467,37 @@ body.light .sf-btn.active{background:rgba(0,119,170,.08);}
   </div>
 </div>
 
+<!-- ═══ MODAL PIN ═══════════════════════════════════════════════════════════ -->
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-lock-icon" id="pin-icon">🔒</div>
+    <div class="pin-title" id="pin-title">CODE PIN</div>
+    <div class="pin-subtitle" id="pin-subtitle">ENTREZ VOTRE PIN</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-error-msg" id="pin-error"></div>
+    <div class="pin-grid">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key wide" onclick="pinKey('0')">0</button>
+      <button class="pin-key del" onclick="pinDel()">⌫</button>
+    </div>
+    <div><button class="pin-cancel-btn" id="pin-cancel-btn" onclick="closePIN()">ANNULER</button></div>
+    <div><button class="pin-change-btn" id="pin-change-btn" onclick="startChangePIN()" style="display:none">Changer le PIN</button></div>
+  </div>
+</div>
+
 <!-- ═══ MODAL HISTORIQUE ═══════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="history-modal">
   <div class="modal" style="border-color:var(--muted);">
@@ -506,6 +565,7 @@ const CAT_KEY = 'nfc_v4_cats';
 const STATS_KEY = 'nfc_v4_stats';
 const HISTORY_KEY = 'nfc_v4_history';
 const THEME_KEY = 'nfc_v4_theme';
+const PIN_KEY = 'nfc_v4_pin';
 
 const EMOJIS = ['📦','🔌','💡','🔑','🗝️','📱','💻','🖥️','🎧','🎮','📷','🚗','🧳','🏠','📚','🗂️','🔧','🔩','💊','🎁','🛒','🎵','🏋️','🐾','🖨️','📺','🔋','⌨️','🖱️','🎒'];
 const CAT_COLORS = ['#00e5ff','#00ff8c','#ff6b35','#ff3d5a','#a78bfa','#fbbf24','#34d399','#60a5fa','#f472b6','#fb923c'];
@@ -540,6 +600,8 @@ let currentPhoto=null;
 let activeFilter='all', activeStatusFilter='all';
 let deferredPrompt=null;
 let currentQRUID=null;
+// PIN state
+let pinBuffer='', pinMode='verify', pinCallback=null, pinStep=0, pinFirstEntry='';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PWA
@@ -574,6 +636,7 @@ async function installPWA(){
 // ═══════════════════════════════════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded',()=>{
   initTheme();
+  initPIN();
   initPWA();
   buildEmojiPicker();
   buildColorPicker();
@@ -587,7 +650,11 @@ window.addEventListener('DOMContentLoaded',()=>{
 
   const params=new URLSearchParams(window.location.search);
   const uid=params.get('uid');
-  if(uid){ history.replaceState({},'',window.location.pathname); handleTagFromURL(uid.toUpperCase()); }
+  if(uid){
+    sessionStorage.setItem('nfc_trusted','1'); // ouvert via scan NFC = pas de PIN
+    history.replaceState({},'',window.location.pathname);
+    handleTagFromURL(uid.toUpperCase());
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -691,6 +758,9 @@ function openRegisterModal(uid,manual,willWrite){
 }
 
 function openEditModal(uid){
+  requirePIN(()=>_openEditModal(uid));
+}
+function _openEditModal(uid){
   const db=loadDB(), tag=db[uid]; if(!tag) return;
   currentUID=uid; editUID=uid; pendingWriteUID=null;
   currentPhoto=tag.photo||null; selectedStatus=tag.status||'available'; selectedEmoji=tag.emoji||'📦';
@@ -847,6 +917,9 @@ function markAsAvailable(){
 // DELETE
 // ═══════════════════════════════════════════════════════════════════════════
 function deleteTag(uid){
+  requirePIN(()=>_deleteTag(uid));
+}
+function _deleteTag(uid){
   const db=loadDB(), name=db[uid]?.name||uid;
   if(!confirm(`Supprimer "${name}" ?`)) return;
   delete db[uid]; saveDB(db); renderList(); updateStats(); renderCatTabs();
@@ -857,12 +930,14 @@ function deleteTag(uid){
 // EXPORT / IMPORT
 // ═══════════════════════════════════════════════════════════════════════════
 function exportData(){
-  const data={tags:loadDB(), categories:loadCats(), stats:loadStats(), exportedAt:new Date().toISOString()};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download=`nfc-backup-${new Date().toISOString().slice(0,10)}.json`;
-  a.click(); URL.revokeObjectURL(a.href);
-  showToast('✓ Sauvegarde exportée','success');
+  requirePIN(()=>{
+    const data={tags:loadDB(), categories:loadCats(), stats:loadStats(), exportedAt:new Date().toISOString()};
+    const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download=`nfc-backup-${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(a.href);
+    showToast('✓ Sauvegarde exportée','success');
+  });
 }
 
 function importData(e){
@@ -914,9 +989,11 @@ function populateCatSelect(selected=''){
 }
 
 function openCatModal(){
-  renderCatListUI();
-  document.getElementById('new-cat-name').value='';
-  document.getElementById('cat-modal').classList.add('open');
+  requirePIN(()=>{
+    renderCatListUI();
+    document.getElementById('new-cat-name').value='';
+    document.getElementById('cat-modal').classList.add('open');
+  });
 }
 function closeCatModal(){ document.getElementById('cat-modal').classList.remove('open'); }
 
@@ -1114,8 +1191,161 @@ function buildEmojiPicker(){
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// THEME
+// PIN SYSTEM
 // ═══════════════════════════════════════════════════════════════════════════
+function hashPIN(pin){ // simple hash - not cryptographic but fine for local use
+  let h=0; for(let i=0;i<pin.length;i++){h=((h<<5)-h)+pin.charCodeAt(i);h|=0;}
+  return h.toString(36);
+}
+function getSavedPIN(){ return localStorage.getItem(PIN_KEY); }
+
+function initPIN(){
+  updateLockBtn();
+  // If no PIN set yet, prompt to create one on first action (not on load)
+}
+
+function updateLockBtn(){
+  const btn=document.getElementById('lock-btn');
+  const pinSet=!!getSavedPIN();
+  btn.textContent=pinSet?'🔒':'🔓';
+  btn.title=pinSet?'Paramètres PIN':'Définir un PIN';
+}
+
+function lockApp(){
+  // Called from lock button after PIN verified — offer change PIN or remove
+  const choice=confirm('Changer votre PIN ?\n\nOK = Changer le PIN\nAnnuler = Supprimer le PIN');
+  if(choice) startChangePIN();
+  else if(confirm('Supprimer le PIN ? N\'importe qui pourra modifier vos tags.'))
+    { localStorage.removeItem(PIN_KEY); updateLockBtn(); showToast('PIN supprimé',''); }
+}
+
+// Main entry point: call before any protected action
+function requirePIN(callback){
+  if(sessionStorage.getItem('nfc_trusted')==='1'){
+    if(callback) callback(); return;
+  }
+  const saved=getSavedPIN();
+  if(!saved) startSetPIN(callback);
+  else openPINVerify(callback);
+}
+
+function openPINVerify(callback){
+  pinMode='verify'; pinCallback=callback; pinBuffer='';
+  document.getElementById('pin-icon').textContent='🔒';
+  document.getElementById('pin-title').textContent='CODE PIN';
+  document.getElementById('pin-subtitle').textContent='ENTREZ VOTRE PIN POUR CONTINUER';
+  document.getElementById('pin-cancel-btn').style.display='inline-block';
+  document.getElementById('pin-change-btn').style.display='inline-block';
+  document.getElementById('pin-error').textContent='';
+  updatePINDots('');
+  document.getElementById('pin-overlay').classList.add('open');
+}
+
+function startSetPIN(callback){
+  pinMode='set'; pinStep=0; pinFirstEntry=''; pinBuffer=''; pinCallback=callback;
+  document.getElementById('pin-icon').textContent='🔐';
+  document.getElementById('pin-title').textContent='CRÉER UN PIN';
+  document.getElementById('pin-subtitle').textContent='CHOISISSEZ UN CODE À 4 CHIFFRES';
+  document.getElementById('pin-cancel-btn').style.display='inline-block';
+  document.getElementById('pin-change-btn').style.display='none';
+  document.getElementById('pin-error').textContent='';
+  updatePINDots('');
+  document.getElementById('pin-overlay').classList.add('open');
+}
+
+function startChangePIN(){
+  closePIN();
+  setTimeout(()=>startSetPIN(null), 100);
+}
+
+function closePIN(){
+  document.getElementById('pin-overlay').classList.remove('open');
+  pinBuffer=''; pinCallback=null; pinStep=0; pinFirstEntry='';
+  updatePINDots('');
+  document.getElementById('pin-error').textContent='';
+}
+
+function pinKey(digit){
+  if(pinBuffer.length>=4) return;
+  pinBuffer+=digit;
+  updatePINDots(pinBuffer);
+  if(pinBuffer.length===4) setTimeout(()=>processPIN(), 120);
+}
+
+function pinDel(){
+  if(pinBuffer.length===0) return;
+  pinBuffer=pinBuffer.slice(0,-1);
+  updatePINDots(pinBuffer);
+  document.getElementById('pin-error').textContent='';
+}
+
+function updatePINDots(buf){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('pd'+i);
+    d.className='pin-dot'+(i<buf.length?' filled':'');
+  }
+}
+
+function processPIN(){
+  if(pinMode==='verify'){
+    const saved=getSavedPIN();
+    if(hashPIN(pinBuffer)===saved){
+      // Success
+      dotsSuccess();
+      setTimeout(()=>{
+        closePIN();
+        if(pinCallback) pinCallback();
+      },300);
+    } else {
+      dotsError();
+      document.getElementById('pin-error').textContent='PIN INCORRECT';
+      pinBuffer='';
+      setTimeout(()=>updatePINDots(''),500);
+    }
+  } else if(pinMode==='set'){
+    if(pinStep===0){
+      pinFirstEntry=pinBuffer; pinBuffer='';
+      pinStep=1;
+      document.getElementById('pin-subtitle').textContent='CONFIRMEZ VOTRE PIN';
+      document.getElementById('pin-error').textContent='';
+      updatePINDots('');
+    } else {
+      if(pinBuffer===pinFirstEntry){
+        localStorage.setItem(PIN_KEY, hashPIN(pinBuffer));
+        updateLockBtn();
+        dotsSuccess();
+        document.getElementById('pin-error').textContent='';
+        setTimeout(()=>{
+          closePIN();
+          showToast('✓ PIN défini','success');
+          if(pinCallback) pinCallback();
+        },400);
+      } else {
+        dotsError();
+        document.getElementById('pin-error').textContent='LES PINS NE CORRESPONDENT PAS';
+        pinBuffer=''; pinStep=0; pinFirstEntry='';
+        document.getElementById('pin-subtitle').textContent='RÉESSAYEZ — CHOISISSEZ UN CODE À 4 CHIFFRES';
+        setTimeout(()=>updatePINDots(''),500);
+      }
+    }
+  }
+}
+
+function dotsError(){
+  for(let i=0;i<4;i++) document.getElementById('pd'+i).className='pin-dot error';
+}
+function dotsSuccess(){
+  for(let i=0;i<4;i++) document.getElementById('pd'+i).className='pin-dot success';
+}
+
+// Keyboard support for PIN
+document.addEventListener('keydown', e=>{
+  if(!document.getElementById('pin-overlay').classList.contains('open')) return;
+  if(e.key>='0'&&e.key<='9') pinKey(e.key);
+  else if(e.key==='Backspace') pinDel();
+  else if(e.key==='Escape') closePIN();
+});
+
 function initTheme(){
   const saved=localStorage.getItem(THEME_KEY)||'dark';
   if(saved==='light') applyTheme('light');
