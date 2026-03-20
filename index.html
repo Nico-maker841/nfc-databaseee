@@ -747,13 +747,16 @@ async function saveTag(){
   }
 
   if(pendingWriteUID&&'NDEFReader' in window){
-    const tagURL = `intent://${APP_URL.replace(/^https?:\/\//,'')}?uid=${uid}#Intent;scheme=https;package=com.android.chrome;end`;
+    const tagURL = `${APP_URL}?uid=${uid}`;
     const ws=document.getElementById('write-status');
     ws.className='write-status visible writing'; ws.textContent='✎ Approchez le tag pour écrire le lien…';
     document.getElementById('save-btn').disabled=true;
     try{
       const writer=new NDEFReader();
-      await writer.write({records:[{recordType:'url',data:tagURL}]});
+      await writer.write({records:[
+        { recordType:'url', data:tagURL },
+        { recordType:'android.com:pkg', data:new TextEncoder().encode('com.android.chrome') }
+      ]});
       db[uid].written=true; ws.className='write-status visible done';
       ws.textContent='✓ Lien écrit sur le tag !';
       saveDB(db); renderList(); updateStats(); renderCatTabs();
