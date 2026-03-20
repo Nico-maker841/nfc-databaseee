@@ -2,142 +2,276 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>NFC TAG DATABASE</title>
+<meta name="theme-color" content="#00e5ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="NFC DB">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link id="manifest-link" rel="manifest">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-  :root {
-    --bg: #060b10;
-    --surface: #0d1821;
-    --surface2: #0f2030;
-    --border: #1a3a55;
-    --cyan: #00e5ff;
-    --cyan2: #00b8d4;
-    --green: #00ff8c;
-    --orange: #ff6b35;
-    --red: #ff3d5a;
-    --text: #c8e6ff;
-    --muted: #4a7090;
-    --mono: 'Share Tech Mono', monospace;
-    --ui: 'Exo 2', sans-serif;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--text); font-family: var(--ui); min-height: 100vh; overflow-x: hidden; }
-  body::before {
-    content: ''; position: fixed; inset: 0;
-    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
-    pointer-events: none; z-index: 9999;
-  }
-  body::after {
-    content: ''; position: fixed; inset: 0;
-    background-image: linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px; pointer-events: none; z-index: 0;
-  }
-  .container { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 20px 16px 80px; }
+:root{
+  --bg:#060b10;--surface:#0d1821;--surface2:#0f2030;--border:#1a3a55;
+  --cyan:#00e5ff;--cyan2:#00b8d4;--green:#00ff8c;--orange:#ff6b35;
+  --red:#ff3d5a;--yellow:#fbbf24;--text:#c8e6ff;--muted:#4a7090;
+  --mono:'Share Tech Mono',monospace;--ui:'Exo 2',sans-serif;
+}
+body.light{
+  --bg:#f0f4f8;--surface:#ffffff;--surface2:#e8eef5;--border:#c5d5e8;
+  --cyan:#0077aa;--cyan2:#005f8a;--green:#0a7c4e;--orange:#c05300;
+  --red:#c0002e;--text:#0d2035;--muted:#6688aa;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);pointer-events:none;z-index:9999;}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
 
-  header { text-align: center; padding: 32px 0 28px; }
-  .logo-badge { display: inline-block; background: var(--cyan); color: var(--bg); font-family: var(--mono); font-size: 10px; font-weight: bold; letter-spacing: 4px; padding: 4px 12px; margin-bottom: 12px; }
-  header h1 { font-family: var(--mono); font-size: clamp(22px, 6vw, 36px); color: var(--cyan); letter-spacing: 2px; text-shadow: 0 0 30px rgba(0,229,255,0.5); line-height: 1.1; }
-  header h1 span { color: var(--green); text-shadow: 0 0 20px rgba(0,255,140,0.5); }
-  .header-sub { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 3px; margin-top: 8px; }
-  .header-line { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--cyan), transparent); margin-top: 24px; opacity: 0.4; }
+.container{position:relative;z-index:1;max-width:680px;margin:0 auto;padding:20px 16px 100px;}
 
-  .status-bar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--cyan); padding: 10px 14px; margin-bottom: 20px; font-family: var(--mono); font-size: 12px; }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: all 0.3s; }
-  .status-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 1.5s infinite; }
-  .status-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  #status-text { color: var(--text); flex: 1; }
+/* HEADER */
+header{text-align:center;padding:28px 0 22px;}
+.logo-badge{display:inline-block;background:var(--cyan);color:var(--bg);font-family:var(--mono);font-size:10px;font-weight:bold;letter-spacing:4px;padding:4px 12px;margin-bottom:10px;}
+header h1{font-family:var(--mono);font-size:clamp(20px,6vw,34px);color:var(--cyan);letter-spacing:2px;text-shadow:0 0 30px rgba(0,229,255,0.5);line-height:1.1;}
+header h1 span{color:var(--green);text-shadow:0 0 20px rgba(0,255,140,0.5);}
+.header-sub{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:3px;margin-top:6px;}
+.header-line{width:100%;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);margin-top:20px;opacity:0.35;}
 
-  .scan-btn { width: 100%; padding: 18px; background: transparent; border: 2px solid var(--cyan); color: var(--cyan); font-family: var(--mono); font-size: 15px; letter-spacing: 4px; cursor: pointer; position: relative; overflow: hidden; transition: all 0.2s; margin-bottom: 24px; text-transform: uppercase; }
-  .scan-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(0,229,255,0.1), transparent); transition: left 0.5s; }
-  .scan-btn:hover::before { left: 100%; }
-  .scan-btn:hover { background: rgba(0,229,255,0.08); box-shadow: 0 0 20px rgba(0,229,255,0.2); }
-  .scan-btn:disabled { opacity: 0.4; cursor: not-allowed; border-color: var(--muted); color: var(--muted); }
-  .scan-btn.scanning { border-color: var(--green); color: var(--green); animation: scanAnim 2s infinite; }
-  @keyframes scanAnim { 0%,100%{box-shadow:0 0 10px rgba(0,255,140,0.2)} 50%{box-shadow:0 0 30px rgba(0,255,140,0.5)} }
+/* STATUS */
+.status-bar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--cyan);padding:10px 14px;margin-bottom:16px;font-family:var(--mono);font-size:12px;}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:all .3s;}
+.status-dot.active{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.5s infinite;}
+.status-dot.error{background:var(--red);box-shadow:0 0 8px var(--red);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+#status-text{color:var(--text);flex:1;}
 
-  .nfc-unsupported { background: rgba(255,61,90,0.08); border: 1px solid rgba(255,61,90,0.3); border-left: 3px solid var(--red); padding: 14px 16px; font-family: var(--mono); font-size: 12px; color: #ff8fa3; margin-bottom: 20px; display: none; }
+/* SCAN BTN */
+.scan-btn{width:100%;padding:16px;background:transparent;border:2px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-size:14px;letter-spacing:4px;cursor:pointer;position:relative;overflow:hidden;transition:all .2s;margin-bottom:20px;text-transform:uppercase;}
+.scan-btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(0,229,255,0.1),transparent);transition:left .5s;}
+.scan-btn:hover::before{left:100%;}
+.scan-btn:hover{background:rgba(0,229,255,0.07);box-shadow:0 0 20px rgba(0,229,255,0.2);}
+.scan-btn.scanning{border-color:var(--green);color:var(--green);animation:scanAnim 2s infinite;}
+@keyframes scanAnim{0%,100%{box-shadow:0 0 10px rgba(0,255,140,.2)}50%{box-shadow:0 0 30px rgba(0,255,140,.5)}}
+.scan-waves{display:inline-flex;align-items:center;gap:5px;}
+.wave-ring{display:inline-block;width:5px;height:5px;border-radius:50%;background:currentColor;}
+.scanning .wave-ring:nth-child(1){animation:wave 1s 0s infinite;}
+.scanning .wave-ring:nth-child(2){animation:wave 1s .2s infinite;}
+.scanning .wave-ring:nth-child(3){animation:wave 1s .4s infinite;}
+@keyframes wave{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.3);opacity:.3}}
 
-  .section-title { font-family: var(--mono); font-size: 11px; color: var(--muted); letter-spacing: 4px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
-  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+/* STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);padding:10px;text-align:center;}
+.stat-val{font-family:var(--mono);font-size:22px;color:var(--cyan);text-shadow:0 0 15px rgba(0,229,255,.4);}
+.stat-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:3px;}
 
-  .search-wrap { position: relative; margin-bottom: 14px; }
-  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--muted); }
-  #search-input { width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 13px; padding: 10px 12px 10px 36px; outline: none; transition: border-color 0.2s; }
-  #search-input:focus { border-color: var(--cyan); }
-  #search-input::placeholder { color: var(--muted); }
+/* TOOLBAR */
+.toolbar{display:flex;gap:8px;margin-bottom:18px;}
+.tool-btn{flex:1;padding:9px 8px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:2px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.tool-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.tool-btn.install-btn{border-color:var(--green);color:var(--green);display:none;}
+.tool-btn.install-btn.visible{display:flex;}
 
-  #tag-list { display: flex; flex-direction: column; gap: 8px; }
-  .tag-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--cyan2); padding: 14px 16px; display: flex; align-items: center; gap: 12px; transition: all 0.2s; animation: slideIn 0.3s ease; }
-  @keyframes slideIn { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
-  .tag-card:hover { border-left-color: var(--cyan); background: var(--surface2); }
-  .tag-card.highlight { border-left-color: var(--green); animation: highlight 2s ease; }
-  @keyframes highlight { 0%{background:rgba(0,255,140,0.15)} 100%{background:var(--surface)} }
-  .tag-icon { width: 36px; height: 36px; background: rgba(0,229,255,0.08); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-  .tag-info { flex: 1; min-width: 0; }
-  .tag-name { font-family: var(--ui); font-weight: 600; font-size: 14px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tag-uid { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 3px; letter-spacing: 1px; }
-  .tag-meta { font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
-  .tag-actions { display: flex; gap: 6px; flex-shrink: 0; }
-  .btn-icon { width: 30px; height: 30px; background: transparent; border: 1px solid var(--border); color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; transition: all 0.2s; }
-  .btn-icon:hover { border-color: var(--cyan); color: var(--cyan); }
-  .btn-icon.delete:hover { border-color: var(--red); color: var(--red); }
-  .empty-state { text-align: center; padding: 50px 20px; color: var(--muted); font-family: var(--mono); font-size: 12px; letter-spacing: 2px; border: 1px dashed var(--border); }
-  .empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.4; }
+/* NFC NOT SUPPORTED */
+.nfc-unsupported{background:rgba(255,61,90,.08);border:1px solid rgba(255,61,90,.3);border-left:3px solid var(--red);padding:12px 14px;font-family:var(--mono);font-size:11px;color:#ff8fa3;margin-bottom:16px;display:none;}
 
-  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 24px; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 12px; text-align: center; }
-  .stat-val { font-family: var(--mono); font-size: 24px; color: var(--cyan); text-shadow: 0 0 15px rgba(0,229,255,0.4); }
-  .stat-label { font-family: var(--mono); font-size: 9px; color: var(--muted); letter-spacing: 2px; margin-top: 4px; }
+/* CATEGORY TABS */
+.cat-tabs-wrap{display:flex;align-items:center;gap:8px;margin-bottom:12px;overflow:hidden;}
+.cat-tabs{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:none;padding-bottom:2px;}
+.cat-tabs::-webkit-scrollbar{display:none;}
+.cat-tab{padding:5px 12px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:2px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.cat-tab:hover{border-color:var(--cyan);color:var(--cyan);}
+.cat-tab.active{background:rgba(0,229,255,.1);border-color:var(--cyan);color:var(--cyan);}
+.cat-tab.active[data-color]{border-color:var(--tab-color,var(--cyan));color:var(--tab-color,var(--cyan));background:rgba(0,0,0,.2);}
+.cat-manage-btn{width:28px;height:28px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.cat-manage-btn:hover{border-color:var(--cyan);color:var(--cyan);}
 
-  .modal-overlay { position: fixed; inset: 0; background: rgba(6,11,16,0.92); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
-  .modal-overlay.open { display: flex; }
-  .modal { background: var(--surface); border: 1px solid var(--cyan); box-shadow: 0 0 40px rgba(0,229,255,0.15); padding: 28px; width: 100%; max-width: 400px; animation: modalIn 0.2s ease; }
-  @keyframes modalIn { from{opacity:0;transform:scale(0.95) translateY(10px)} to{opacity:1;transform:scale(1) translateY(0)} }
-  .modal-badge { font-family: var(--mono); font-size: 9px; letter-spacing: 4px; color: var(--cyan); margin-bottom: 6px; }
-  .modal h2 { font-family: var(--ui); font-weight: 800; font-size: 18px; margin-bottom: 6px; }
-  .modal-uid { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-bottom: 20px; padding: 8px; background: var(--bg); border: 1px solid var(--border); word-break: break-all; }
-  .form-label { font-family: var(--mono); font-size: 10px; letter-spacing: 3px; color: var(--muted); margin-bottom: 8px; display: block; }
-  .form-input { width: 100%; background: var(--bg); border: 1px solid var(--border); border-bottom: 2px solid var(--cyan); color: var(--text); font-family: var(--ui); font-size: 15px; padding: 10px 12px; outline: none; margin-bottom: 8px; transition: border-color 0.2s; }
-  .form-input:focus { border-bottom-color: var(--green); }
-  .emoji-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-  .emoji-btn { width: 36px; height: 36px; background: var(--bg); border: 1px solid var(--border); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-  .emoji-btn:hover, .emoji-btn.selected { border-color: var(--cyan); background: rgba(0,229,255,0.1); }
-  .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
-  .btn-primary { padding: 12px; background: var(--cyan); border: none; color: var(--bg); font-family: var(--mono); font-size: 12px; letter-spacing: 3px; cursor: pointer; font-weight: bold; transition: all 0.2s; }
-  .btn-primary:hover { background: var(--green); box-shadow: 0 0 20px rgba(0,255,140,0.3); }
-  .btn-secondary { padding: 12px; background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: var(--mono); font-size: 12px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s; }
-  .btn-secondary:hover { border-color: var(--red); color: var(--red); }
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:12px;}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);}
+#search-input{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:13px;padding:9px 12px 9px 34px;outline:none;transition:border-color .2s;}
+#search-input:focus{border-color:var(--cyan);}
+#search-input::placeholder{color:var(--muted);}
 
-  /* Write progress */
-  .write-status { font-family: var(--mono); font-size: 11px; padding: 10px; background: var(--bg); border: 1px solid var(--border); margin-bottom: 16px; display: none; text-align: center; }
-  .write-status.visible { display: block; }
-  .write-status.writing { color: var(--orange); border-color: var(--orange); animation: pulse 1s infinite; }
-  .write-status.done { color: var(--green); border-color: var(--green); }
-  .write-status.fail { color: var(--red); border-color: var(--red); }
+/* SECTION TITLE */
+.section-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:4px;margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
 
-  /* Detail modal */
-  .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
-  .detail-row:last-child { border-bottom: none; }
-  .detail-key { font-family: var(--mono); font-size: 10px; color: var(--muted); letter-spacing: 2px; }
-  .detail-val { font-family: var(--mono); font-size: 11px; color: var(--text); text-align: right; word-break: break-all; max-width: 60%; }
+/* TAG LIST */
+#tag-list{display:flex;flex-direction:column;gap:8px;}
+.tag-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--cyan2);padding:12px 14px;display:flex;align-items:center;gap:11px;transition:all .2s;animation:slideIn .3s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+.tag-card:hover{border-left-color:var(--cyan);background:var(--surface2);}
+.tag-card.highlight{animation:highlight 2s ease;}
+@keyframes highlight{0%{background:rgba(0,255,140,.15)}100%{background:var(--surface)}}
+.tag-card[data-status="lent"]{border-left-color:var(--orange);}
+.tag-card[data-status="lost"]{border-left-color:var(--red);}
+.tag-icon{width:38px;height:38px;background:rgba(0,229,255,.07);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;position:relative;}
+.tag-photo-thumb{width:38px;height:38px;object-fit:cover;flex-shrink:0;border:1px solid var(--border);}
+.tag-info{flex:1;min-width:0;}
+.tag-name-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.tag-name{font-family:var(--ui);font-weight:600;font-size:14px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tag-uid{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:1px;}
+.tag-meta{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px;}
+.tag-actions{display:flex;gap:5px;flex-shrink:0;}
+.btn-icon{width:28px;height:28px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .2s;}
+.btn-icon:hover{border-color:var(--cyan);color:var(--cyan);}
+.btn-icon.delete:hover{border-color:var(--red);color:var(--red);}
 
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface2); border: 1px solid var(--cyan); color: var(--text); font-family: var(--mono); font-size: 12px; letter-spacing: 2px; padding: 12px 20px; z-index: 2000; transition: transform 0.3s ease; white-space: nowrap; box-shadow: 0 0 20px rgba(0,229,255,0.2); }
-  .toast.show { transform: translateX(-50%) translateY(0); }
-  .toast.success { border-color: var(--green); }
-  .toast.error-t { border-color: var(--red); }
+/* BADGES */
+.badge{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:2px 6px;border:1px solid;vertical-align:middle;flex-shrink:0;}
+.badge-written{border-color:var(--green);color:var(--green);}
+.badge-unwritten{border-color:var(--border);color:var(--muted);}
+.badge-available{border-color:var(--green);color:var(--green);}
+.badge-lent{border-color:var(--orange);color:var(--orange);}
+.badge-lost{border-color:var(--red);color:var(--red);}
+.badge-cat{border-color:var(--badge-color,var(--muted));color:var(--badge-color,var(--muted));}
 
-  .scan-waves { display: inline-flex; align-items: center; gap: 6px; }
-  .wave-ring { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-  .scanning .wave-ring:nth-child(1) { animation: wave 1s 0s infinite; }
-  .scanning .wave-ring:nth-child(2) { animation: wave 1s 0.2s infinite; }
-  .scanning .wave-ring:nth-child(3) { animation: wave 1s 0.4s infinite; }
-  @keyframes wave { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(0.3);opacity:0.3} }
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:2px;border:1px dashed var(--border);}
+.empty-icon{font-size:36px;margin-bottom:14px;opacity:.4;}
 
-  /* Pill badge */
-  .written-badge { display: inline-block; font-family: var(--mono); font-size: 9px; letter-spacing: 2px; padding: 2px 7px; border: 1px solid var(--green); color: var(--green); vertical-align: middle; margin-left: 6px; }
-  .unwritten-badge { display: inline-block; font-family: var(--mono); font-size: 9px; letter-spacing: 2px; padding: 2px 7px; border: 1px solid var(--muted); color: var(--muted); vertical-align: middle; margin-left: 6px; }
+/* LIGHT THEME OVERRIDES */
+body.light::before{background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);}
+body.light::after{background-image:linear-gradient(rgba(0,119,170,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,119,170,0.05) 1px,transparent 1px);background-size:40px 40px;}
+body.light .scan-btn::before{background:linear-gradient(90deg,transparent,rgba(0,119,170,0.1),transparent);}
+body.light header h1{text-shadow:none;}
+body.light header h1 span{text-shadow:none;}
+body.light .stat-val{text-shadow:none;}
+body.light .status-dot.active{box-shadow:0 0 6px var(--green);}
+
+/* THEME TOGGLE */
+.theme-btn{width:36px;height:36px;flex-shrink:0;padding:0;font-size:16px;}
+
+/* STATUS FILTER */
+.status-filter-row{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;}
+.status-filter-row::-webkit-scrollbar{display:none;}
+.sf-btn{padding:5px 12px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:2px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.sf-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.sf-btn.active{background:rgba(0,229,255,.08);border-color:var(--cyan);color:var(--cyan);}
+.sf-btn.sf-lent.active{background:rgba(255,107,53,.08);border-color:var(--orange);color:var(--orange);}
+.sf-btn.sf-lost.active{background:rgba(255,61,90,.08);border-color:var(--red);color:var(--red);}
+.sf-btn.sf-available.active{background:rgba(0,255,140,.08);border-color:var(--green);color:var(--green);}
+body.light .sf-btn.active{background:rgba(0,119,170,.08);}
+
+/* HISTORY MODAL */
+.history-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.history-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);transition:background .15s;}
+.history-item:hover{background:var(--surface2);}
+.history-emoji{font-size:16px;flex-shrink:0;}
+.history-info{flex:1;min-width:0;}
+.history-name{font-family:var(--ui);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.history-time{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px;}
+.history-status{font-family:var(--mono);font-size:9px;padding:2px 6px;border:1px solid;flex-shrink:0;}
+
+/* QR MODAL */
+.qr-container{display:flex;flex-direction:column;align-items:center;gap:14px;padding:0 22px 18px;}
+.qr-box{background:white;padding:14px;border:2px solid var(--border);display:inline-flex;}
+#qr-canvas canvas,#qr-canvas img{display:block;}
+.qr-url{font-family:var(--mono);font-size:10px;color:var(--muted);word-break:break-all;text-align:center;max-width:320px;line-height:1.5;}
+.qr-hint{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;letter-spacing:1px;}
+.qr-download-btn{padding:10px 20px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-size:11px;letter-spacing:3px;cursor:pointer;transition:all .2s;}
+.qr-download-btn:hover{background:var(--cyan);color:var(--bg);}
+
+/* MODAL OVERLAY */
+.modal-overlay{position:fixed;inset:0;background:rgba(6,11,16,.92);z-index:1000;display:none;align-items:flex-end;justify-content:center;padding:0;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;}
+@media(min-width:500px){.modal-overlay{align-items:center;padding:20px;}}
+
+.modal{background:var(--surface);border:1px solid var(--cyan);box-shadow:0 0 40px rgba(0,229,255,.15);width:100%;max-width:420px;max-height:90vh;overflow-y:auto;animation:modalIn .25s ease;scrollbar-width:thin;scrollbar-color:var(--border) transparent;border-radius:0;}
+@media(max-width:499px){.modal{max-height:92vh;border-bottom:none;border-left:none;border-right:none;}}
+.modal::-webkit-scrollbar{width:4px;}
+.modal::-webkit-scrollbar-thumb{background:var(--border);}
+@keyframes modalIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+.modal-header{padding:22px 22px 0;}
+.modal-badge{font-family:var(--mono);font-size:9px;letter-spacing:4px;color:var(--cyan);margin-bottom:5px;}
+.modal h2{font-family:var(--ui);font-weight:800;font-size:17px;margin-bottom:5px;}
+.modal-uid{font-family:var(--mono);font-size:10px;color:var(--muted);padding:7px 10px;background:var(--bg);border:1px solid var(--border);word-break:break-all;margin-bottom:18px;}
+
+.modal-section{padding:0 22px;margin-bottom:16px;}
+.modal-section-title{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--muted);padding:8px 0 6px;border-top:1px solid var(--border);margin-bottom:10px;}
+
+.form-label{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--muted);margin-bottom:6px;display:block;}
+.form-input{width:100%;background:var(--bg);border:1px solid var(--border);border-bottom:2px solid var(--cyan);color:var(--text);font-family:var(--ui);font-size:14px;padding:9px 11px;outline:none;margin-bottom:12px;transition:border-color .2s;}
+.form-input:focus{border-bottom-color:var(--green);}
+.form-textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-bottom:2px solid var(--cyan);color:var(--text);font-family:var(--ui);font-size:13px;padding:9px 11px;outline:none;resize:vertical;min-height:70px;margin-bottom:12px;transition:border-color .2s;}
+.form-textarea:focus{border-bottom-color:var(--green);}
+.form-textarea::placeholder{color:var(--muted);}
+.form-input::placeholder{color:var(--muted);}
+
+.emoji-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.emoji-btn{width:34px;height:34px;background:var(--bg);border:1px solid var(--border);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.emoji-btn:hover,.emoji-btn.selected{border-color:var(--cyan);background:rgba(0,229,255,.1);}
+
+/* Category selector */
+.cat-select-row{display:flex;gap:6px;margin-bottom:12px;}
+.cat-select{flex:1;background:var(--bg);border:1px solid var(--border);border-bottom:2px solid var(--cyan);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px 10px;outline:none;}
+.cat-select option{background:var(--bg);}
+
+/* Photo upload */
+.photo-upload-area{border:1px dashed var(--border);padding:14px;text-align:center;cursor:pointer;margin-bottom:12px;transition:border-color .2s;position:relative;}
+.photo-upload-area:hover{border-color:var(--cyan);}
+.photo-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.photo-preview{width:100%;max-height:120px;object-fit:cover;display:none;margin-bottom:8px;}
+.photo-upload-label{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;}
+.photo-remove-btn{font-family:var(--mono);font-size:10px;color:var(--red);cursor:pointer;border:none;background:transparent;margin-top:4px;}
+
+/* Status selector */
+.status-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px;}
+.status-btn{padding:9px 4px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:1px;cursor:pointer;text-align:center;transition:all .15s;}
+.status-btn[data-val="available"].active{border-color:var(--green);color:var(--green);background:rgba(0,255,140,.08);}
+.status-btn[data-val="lent"].active{border-color:var(--orange);color:var(--orange);background:rgba(255,107,53,.08);}
+.status-btn[data-val="lost"].active{border-color:var(--red);color:var(--red);background:rgba(255,61,90,.08);}
+
+/* Borrower field */
+#borrower-field{display:none;}
+
+/* Write status */
+.write-status{font-family:var(--mono);font-size:11px;padding:9px;background:var(--bg);border:1px solid var(--border);margin-bottom:14px;text-align:center;display:none;}
+.write-status.visible{display:block;}
+.write-status.writing{color:var(--orange);border-color:var(--orange);animation:pulse 1s infinite;}
+.write-status.done{color:var(--green);border-color:var(--green);}
+.write-status.fail{color:var(--red);border-color:var(--red);}
+
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 22px 22px;}
+.btn-primary{padding:12px;background:var(--cyan);border:none;color:var(--bg);font-family:var(--mono);font-size:11px;letter-spacing:3px;cursor:pointer;font-weight:bold;transition:all .2s;}
+.btn-primary:hover{background:var(--green);box-shadow:0 0 20px rgba(0,255,140,.3);}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-secondary{padding:12px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:3px;cursor:pointer;transition:all .2s;}
+.btn-secondary:hover{border-color:var(--red);color:var(--red);}
+
+/* Detail modal */
+.detail-status-banner{padding:12px;text-align:center;font-family:var(--mono);font-size:12px;letter-spacing:2px;margin-bottom:16px;}
+.detail-status-banner.available{background:rgba(0,255,140,.08);border:1px solid rgba(0,255,140,.3);color:var(--green);}
+.detail-status-banner.lent{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.4);color:var(--orange);}
+.detail-status-banner.lost{background:rgba(255,61,90,.1);border:1px solid rgba(255,61,90,.4);color:var(--red);}
+.detail-photo{width:100%;max-height:140px;object-fit:cover;margin-bottom:14px;display:none;}
+.detail-notes{font-family:var(--ui);font-size:13px;color:var(--text);background:var(--bg);border:1px solid var(--border);padding:10px;margin-bottom:14px;line-height:1.5;display:none;white-space:pre-wrap;}
+.detail-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);}
+.detail-row:last-child{border-bottom:none;}
+.detail-key{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;}
+.detail-val{font-family:var(--mono);font-size:11px;color:var(--text);text-align:right;word-break:break-all;max-width:60%;}
+
+/* Cat manage modal */
+.cat-list{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
+.cat-list-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border:1px solid var(--border);}
+.cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.cat-item-name{flex:1;font-family:var(--mono);font-size:12px;}
+.cat-item-del{background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;padding:3px 8px;font-size:11px;font-family:var(--mono);transition:all .15s;}
+.cat-item-del:hover{border-color:var(--red);color:var(--red);}
+.cat-add-row{display:flex;gap:6px;margin-bottom:12px;}
+.cat-add-input{flex:1;background:var(--bg);border:1px solid var(--border);border-bottom:2px solid var(--cyan);color:var(--text);font-family:var(--mono);font-size:13px;padding:8px 10px;outline:none;}
+.color-pick-row{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;}
+.color-pick{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .15s;flex-shrink:0;}
+.color-pick.selected,.color-pick:hover{border-color:white;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--cyan);color:var(--text);font-family:var(--mono);font-size:11px;letter-spacing:2px;padding:11px 18px;z-index:2000;transition:transform .3s ease;white-space:nowrap;box-shadow:0 0 20px rgba(0,229,255,.2);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.success{border-color:var(--green);}
+.toast.error-t{border-color:var(--red);}
 </style>
 </head>
 <body>
@@ -150,9 +284,7 @@
     <div class="header-line"></div>
   </header>
 
-  <div class="nfc-unsupported" id="nfc-unsupported">
-    ⚠ WEB NFC NON SUPPORTÉ — Utilisez Chrome sur Android pour scanner et écrire des tags.
-  </div>
+  <div class="nfc-unsupported" id="nfc-unsupported">⚠ WEB NFC NON SUPPORTÉ — Utilisez Chrome Android. Ajout manuel disponible.</div>
 
   <div class="status-bar">
     <div class="status-dot" id="status-dot"></div>
@@ -161,43 +293,101 @@
 
   <button class="scan-btn" id="scan-btn" onclick="toggleScan()">
     <span id="scan-label">
-      <span class="scan-waves">
-        <span class="wave-ring"></span><span class="wave-ring"></span><span class="wave-ring"></span>
-      </span>
+      <span class="scan-waves"><span class="wave-ring"></span><span class="wave-ring"></span><span class="wave-ring"></span></span>
       &nbsp;&nbsp;SCANNER UN TAG
     </span>
   </button>
 
   <div class="stats-row">
-    <div class="stat-card"><div class="stat-val" id="stat-total">0</div><div class="stat-label">TAGS ENREG.</div></div>
-    <div class="stat-card"><div class="stat-val" id="stat-today">0</div><div class="stat-label">AJOUTÉS AUJ.</div></div>
-    <div class="stat-card"><div class="stat-val" id="stat-scanned">0</div><div class="stat-label">SCANS TOTAL</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-total">0</div><div class="stat-label">TAGS</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-lent">0</div><div class="stat-label">PRÊTÉS</div></div>
+    <div class="stat-card"><div class="stat-val" id="stat-scanned">0</div><div class="stat-label">SCANS</div></div>
+  </div>
+
+  <div class="toolbar">
+    <button class="tool-btn install-btn" id="install-btn" onclick="installPWA()">📲 INSTALLER</button>
+    <button class="tool-btn" onclick="openHistoryModal()">📋 HISTORIQUE</button>
+    <button class="tool-btn" onclick="exportData()">⬆ EXPORT</button>
+    <button class="tool-btn" onclick="document.getElementById('import-input').click()">⬇ IMPORT</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
+    <button class="tool-btn theme-btn" id="theme-btn" onclick="toggleTheme()" title="Changer le thème">🌙</button>
   </div>
 
   <div class="section-title">TAGS ENREGISTRÉS</div>
+
+  <div class="cat-tabs-wrap">
+    <div class="cat-tabs" id="cat-tabs"></div>
+    <button class="cat-manage-btn" title="Gérer les catégories" onclick="openCatModal()">⚙</button>
+  </div>
+
+  <div class="status-filter-row">
+    <button class="sf-btn active" data-sf="all" onclick="setStatusFilter('all')">TOUS</button>
+    <button class="sf-btn sf-available" data-sf="available" onclick="setStatusFilter('available')">🟢 DISPO</button>
+    <button class="sf-btn sf-lent" data-sf="lent" onclick="setStatusFilter('lent')">🟡 PRÊTÉS</button>
+    <button class="sf-btn sf-lost" data-sf="lost" onclick="setStatusFilter('lost')">🔴 PERDUS</button>
+  </div>
+
   <div class="search-wrap">
     <span class="search-icon">🔍</span>
-    <input type="text" id="search-input" placeholder="Rechercher..." oninput="filterTags()" />
+    <input type="text" id="search-input" placeholder="Rechercher..." oninput="filterTags()"/>
   </div>
+
   <div id="tag-list"></div>
 </div>
 
-<!-- Modal : enregistrement / édition -->
+<!-- ═══ MODAL ENREGISTREMENT ═══════════════════════════════════════════════ -->
 <div class="modal-overlay" id="register-modal">
   <div class="modal">
-    <div class="modal-badge" id="modal-badge">NOUVEAU TAG DÉTECTÉ</div>
-    <h2 id="modal-title">Enregistrer ce tag</h2>
-    <div class="modal-uid" id="modal-uid">UID: —</div>
+    <div class="modal-header">
+      <div class="modal-badge" id="modal-badge">NOUVEAU TAG</div>
+      <h2 id="modal-title">Enregistrer ce tag</h2>
+      <div class="modal-uid" id="modal-uid">UID: —</div>
+    </div>
 
-    <label class="form-label">NOM DU TAG</label>
-    <input type="text" class="form-input" id="tag-name-input" placeholder="Ex : Câble chargeur bureau" maxlength="60"
-           onkeydown="if(event.key==='Enter') saveTag()" />
+    <div class="modal-section">
+      <div class="modal-section-title">IDENTIFICATION</div>
+      <label class="form-label">NOM DU TAG</label>
+      <input type="text" class="form-input" id="tag-name-input" placeholder="Ex : Câble chargeur bureau" maxlength="60"
+             onkeydown="if(event.key==='Enter') saveTag()"/>
 
-    <label class="form-label" style="margin-top:12px">ICÔNE</label>
-    <div class="emoji-row" id="emoji-row"></div>
+      <label class="form-label">ICÔNE</label>
+      <div class="emoji-row" id="emoji-row"></div>
 
-    <!-- Statut écriture -->
-    <div class="write-status" id="write-status"></div>
+      <label class="form-label">CATÉGORIE</label>
+      <div class="cat-select-row">
+        <select class="cat-select" id="cat-select"></select>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">DÉTAILS</div>
+      <label class="form-label">NOTES</label>
+      <textarea class="form-textarea" id="tag-notes" placeholder="Informations supplémentaires…"></textarea>
+      <label class="form-label">PHOTO</label>
+      <div class="photo-upload-area" id="photo-upload-area">
+        <input type="file" accept="image/*" onchange="handlePhotoUpload(event)"/>
+        <img class="photo-preview" id="photo-preview" alt=""/>
+        <div class="photo-upload-label" id="photo-label">📷 APPUYER POUR AJOUTER UNE PHOTO</div>
+        <button class="photo-remove-btn" id="photo-remove" onclick="removePhoto(event)" style="display:none">✕ SUPPRIMER</button>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">STATUT</div>
+      <div class="status-btns">
+        <button class="status-btn active" data-val="available" onclick="selectStatus('available')">🟢 DISPO</button>
+        <button class="status-btn" data-val="lent" onclick="selectStatus('lent')">🟡 PRÊTÉ</button>
+        <button class="status-btn" data-val="lost" onclick="selectStatus('lost')">🔴 PERDU</button>
+      </div>
+      <div id="borrower-field">
+        <label class="form-label">PRÊTÉ À</label>
+        <input type="text" class="form-input" id="borrower-input" placeholder="Nom de la personne…" maxlength="40"/>
+      </div>
+    </div>
+
+    <div class="modal-section" style="margin-bottom:0">
+      <div class="write-status" id="write-status"></div>
+    </div>
 
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal()">ANNULER</button>
@@ -206,15 +396,100 @@
   </div>
 </div>
 
-<!-- Modal : détail -->
+<!-- ═══ MODAL DÉTAIL ═══════════════════════════════════════════════════════ -->
 <div class="modal-overlay" id="detail-modal">
   <div class="modal">
-    <div class="modal-badge">TAG RECONNU</div>
-    <h2 id="detail-name" style="font-size:20px;color:var(--green);margin-bottom:16px"></h2>
-    <div id="detail-rows"></div>
-    <div class="modal-actions" style="margin-top:20px">
+    <div class="modal-header">
+      <div class="modal-badge">TAG RECONNU</div>
+      <h2 id="detail-name" style="font-size:19px;color:var(--green);margin-bottom:14px;"></h2>
+    </div>
+    <div style="padding:0 22px 0;">
+      <div class="detail-status-banner available" id="detail-status-banner"></div>
+      <img class="detail-photo" id="detail-photo" alt=""/>
+      <div class="detail-notes" id="detail-notes"></div>
+      <div id="detail-rows"></div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px">
       <button class="btn-secondary" onclick="closeDetailModal()">FERMER</button>
       <button class="btn-primary" onclick="editFromDetail()">MODIFIER</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL CATÉGORIES ════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="cat-modal">
+  <div class="modal" style="border-color:var(--muted);">
+    <div class="modal-header">
+      <div class="modal-badge" style="color:var(--muted)">GESTION</div>
+      <h2 style="margin-bottom:16px">Catégories</h2>
+    </div>
+    <div class="modal-section">
+      <div class="cat-list" id="cat-list-ui"></div>
+      <label class="form-label">NOUVELLE CATÉGORIE</label>
+      <div class="cat-add-row">
+        <input type="text" class="cat-add-input" id="new-cat-name" placeholder="Nom…" maxlength="20"
+               onkeydown="if(event.key==='Enter') addCategory()"/>
+      </div>
+      <div class="color-pick-row" id="color-pick-row"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeCatModal()">FERMER</button>
+      <button class="btn-primary" onclick="addCategory()">AJOUTER</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL HISTORIQUE ═══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="history-modal">
+  <div class="modal" style="border-color:var(--muted);">
+    <div class="modal-header">
+      <div class="modal-badge" style="color:var(--muted)">JOURNAL</div>
+      <h2 style="margin-bottom:16px">20 derniers scans</h2>
+    </div>
+    <div style="padding:0 22px;">
+      <div class="history-list" id="history-list"></div>
+      <div style="margin-top:12px;margin-bottom:4px;">
+        <button class="btn-secondary" style="width:100%;font-size:10px;" onclick="clearHistory()">🗑 EFFACER L'HISTORIQUE</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" style="grid-column:1/-1;" onclick="closeHistoryModal()">FERMER</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL QR CODE ══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="qr-modal">
+  <div class="modal" style="border-color:var(--cyan2);">
+    <div class="modal-header">
+      <div class="modal-badge">QR CODE DE SECOURS</div>
+      <h2 id="qr-title" style="margin-bottom:4px;font-size:16px;"></h2>
+      <div class="modal-uid" id="qr-uid" style="margin-bottom:14px;"></div>
+    </div>
+    <div class="qr-container">
+      <div class="qr-box">
+        <div id="qr-canvas"></div>
+      </div>
+      <p class="qr-hint">Scannez ce QR code si le tag NFC ne répond plus</p>
+      <p class="qr-url" id="qr-url-text"></p>
+      <button class="qr-download-btn" onclick="downloadQR()">⬇ TÉLÉCHARGER</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" style="grid-column:1/-1;" onclick="closeQRModal()">FERMER</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="return-modal">
+  <div class="modal" style="border-color:var(--orange);">
+    <div class="modal-header">
+      <div class="modal-badge" id="return-badge" style="color:var(--orange)">TAG SCANNÉ</div>
+      <h2 id="return-title" style="font-size:17px;margin-bottom:6px;"></h2>
+      <div class="detail-status-banner lent" id="return-status-banner" style="margin-bottom:16px;"></div>
+    </div>
+    <div style="padding:0 22px 6px;font-family:var(--mono);font-size:12px;color:var(--text);line-height:1.7;" id="return-msg"></div>
+    <div class="modal-actions" style="margin-top:18px;">
+      <button class="btn-secondary" onclick="closeReturnModal()">LAISSER TEL QUEL</button>
+      <button class="btn-primary" style="background:var(--green);" onclick="markAsAvailable()">✓ MARQUER DISPO</button>
     </div>
   </div>
 </div>
@@ -222,397 +497,703 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ─── CONFIG ────────────────────────────────────────────────────────────────
-// ⚠️ Change cette URL si tu renommes ton dépôt GitHub
-const APP_URL = window.location.origin + window.location.pathname.replace(/\/$/, '');
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG & CONSTANTS
+// ═══════════════════════════════════════════════════════════════════════════
+const APP_URL = window.location.origin + window.location.pathname.replace(/\/$/,'');
+const DB_KEY = 'nfc_v4_tags';
+const CAT_KEY = 'nfc_v4_cats';
+const STATS_KEY = 'nfc_v4_stats';
+const HISTORY_KEY = 'nfc_v4_history';
+const THEME_KEY = 'nfc_v4_theme';
 
-const DB_KEY = 'nfc_tag_db_v3';
-const STATS_KEY = 'nfc_stats_v3';
+const EMOJIS = ['📦','🔌','💡','🔑','🗝️','📱','💻','🖥️','🎧','🎮','📷','🚗','🧳','🏠','📚','🗂️','🔧','🔩','💊','🎁','🛒','🎵','🏋️','🐾','🖨️','📺','🔋','⌨️','🖱️','🎒'];
+const CAT_COLORS = ['#00e5ff','#00ff8c','#ff6b35','#ff3d5a','#a78bfa','#fbbf24','#34d399','#60a5fa','#f472b6','#fb923c'];
+const STATUS_LABELS = {available:'🟢 DISPONIBLE', lent:'🟡 PRÊTÉ', lost:'🔴 PERDU'};
 
-// ─── DATA ──────────────────────────────────────────────────────────────────
-function loadDB() { try { return JSON.parse(localStorage.getItem(DB_KEY)) || {}; } catch { return {}; } }
-function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
-function loadStats() { try { return JSON.parse(localStorage.getItem(STATS_KEY)) || { totalScans: 0 }; } catch { return { totalScans: 0 }; } }
-function saveStats(s) { localStorage.setItem(STATS_KEY, JSON.stringify(s)); }
+const DEFAULT_CATS = [
+  {id:'cat_general', name:'Général', color:'#00e5ff'},
+  {id:'cat_elec', name:'Électronique', color:'#00ff8c'},
+  {id:'cat_maison', name:'Maison', color:'#fbbf24'},
+  {id:'cat_perso', name:'Personnel', color:'#a78bfa'},
+];
 
-const EMOJIS = ['📦','🔌','💡','🔑','🗝️','📱','💻','🖥️','🎧','🎮','📷','🚗','🧳','🏠','📚','🗂️','🔧','🔩','💊','🎁','🛒','🎵','🏋️','🐾'];
+// ═══════════════════════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════════════════════
+function loadDB(){ try{ return JSON.parse(localStorage.getItem(DB_KEY))||{}; }catch{ return {}; } }
+function saveDB(db){ localStorage.setItem(DB_KEY,JSON.stringify(db)); }
+function loadCats(){ try{ const c=JSON.parse(localStorage.getItem(CAT_KEY)); return c&&c.length?c:DEFAULT_CATS; }catch{ return DEFAULT_CATS; } }
+function saveCats(c){ localStorage.setItem(CAT_KEY,JSON.stringify(c)); }
+function loadStats(){ try{ return JSON.parse(localStorage.getItem(STATS_KEY))||{totalScans:0}; }catch{ return {totalScans:0}; } }
+function saveStats(s){ localStorage.setItem(STATS_KEY,JSON.stringify(s)); }
+function loadHistory(){ try{ return JSON.parse(localStorage.getItem(HISTORY_KEY))||[]; }catch{ return []; } }
+function saveHistory(h){ localStorage.setItem(HISTORY_KEY,JSON.stringify(h)); }
 
-// ─── STATE ─────────────────────────────────────────────────────────────────
-let isScanning = false;
-let nfcReader = null;
-let currentUID = null;
-let editUID = null;
-let selectedEmoji = '📦';
-let detailUID = null;
-let pendingWriteUID = null; // UID à écrire sur le tag après save
+// ═══════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════
+let isScanning=false, nfcReader=null;
+let currentUID=null, editUID=null, pendingWriteUID=null, detailUID=null;
+let selectedEmoji='📦', selectedStatus='available', selectedColor=CAT_COLORS[0];
+let currentPhoto=null;
+let activeFilter='all', activeStatusFilter='all';
+let deferredPrompt=null;
+let currentQRUID=null;
 
-// ─── INIT ──────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
+// ═══════════════════════════════════════════════════════════════════════════
+// PWA
+// ═══════════════════════════════════════════════════════════════════════════
+function initPWA(){
+  const manifest={name:'NFC TAG DATABASE',short_name:'NFC DB',
+    start_url:window.location.pathname,display:'standalone',
+    background_color:'#060b10',theme_color:'#00e5ff',
+    description:'Gestionnaire de tags NFC NTAG 213'};
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  document.getElementById('manifest-link').href=URL.createObjectURL(blob);
+
+  window.addEventListener('beforeinstallprompt', e=>{
+    e.preventDefault(); deferredPrompt=e;
+    document.getElementById('install-btn').classList.add('visible');
+  });
+  window.addEventListener('appinstalled',()=>{
+    document.getElementById('install-btn').classList.remove('visible');
+    showToast('✓ App installée !','success');
+  });
+}
+
+async function installPWA(){
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const r=await deferredPrompt.userChoice;
+  if(r.outcome==='accepted') deferredPrompt=null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  initTheme();
+  initPWA();
   buildEmojiPicker();
+  buildColorPicker();
+  renderCatTabs();
   renderList();
   updateStats();
+  populateCatSelect();
 
-  if (!('NDEFReader' in window)) {
-    document.getElementById('nfc-unsupported').style.display = 'block';
-  }
+  if(!('NDEFReader' in window))
+    document.getElementById('nfc-unsupported').style.display='block';
 
-  // 🔑 Vérifier si on arrive depuis un scan de tag (URL contient ?uid=...)
-  const params = new URLSearchParams(window.location.search);
-  const uid = params.get('uid');
-  if (uid) {
-    // Nettoyer l'URL sans recharger
-    history.replaceState({}, '', window.location.pathname);
-    handleTagFromURL(uid.toUpperCase());
-  }
+  const params=new URLSearchParams(window.location.search);
+  const uid=params.get('uid');
+  if(uid){ history.replaceState({},'',window.location.pathname); handleTagFromURL(uid.toUpperCase()); }
 });
 
-// ─── ARRIVÉE DEPUIS UN TAG SCANNÉ ─────────────────────────────────────────
-function handleTagFromURL(uid) {
-  const db = loadDB();
-  const stats = loadStats();
-  stats.totalScans = (stats.totalScans || 0) + 1;
-  saveStats(stats);
-  updateStats();
-
-  if (db[uid]) {
-    // Tag connu → afficher les infos directement
-    db[uid].lastSeen = new Date().toISOString();
-    db[uid].scanCount = (db[uid].scanCount || 0) + 1;
-    saveDB(db);
-    renderList();
-    setStatus('active', `✓ Tag reconnu : ${db[uid].name}`);
-    openDetailModal(uid);
+// ═══════════════════════════════════════════════════════════════════════════
+// SCAN FROM URL
+// ═══════════════════════════════════════════════════════════════════════════
+function handleTagFromURL(uid){
+  const db=loadDB(), stats=loadStats();
+  stats.totalScans=(stats.totalScans||0)+1; saveStats(stats); updateStats();
+  if(db[uid]){
+    db[uid].lastSeen=new Date().toISOString();
+    db[uid].scanCount=(db[uid].scanCount||0)+1;
+    saveDB(db); renderList();
+    addScanToHistory(uid, db[uid]);
+    const status=db[uid].status||'available';
+    if(status==='lent'||status==='lost'){
+      setStatus('active',`⚠ Tag ${status==='lent'?'prêté':'perdu'} scanné : ${db[uid].name}`);
+      openReturnModal(uid);
+    } else {
+      setStatus('active',`✓ Tag reconnu : ${db[uid].name}`);
+      openDetailModal(uid);
+    }
   } else {
-    // Tag vierge (URL dessus mais pas dans la base) → demander un nom
-    setStatus('active', `◈ Nouveau tag : ${uid}`);
-    openRegisterModal(uid, false, false);
+    setStatus('active',`◈ Nouveau tag : ${uid}`);
+    openRegisterModal(uid,false,false);
   }
 }
 
-// ─── SCAN MANUEL (bouton) ─────────────────────────────────────────────────
-async function toggleScan() {
-  if (!('NDEFReader' in window)) {
-    openRegisterModal(generateFakeUID(), true, false);
-    return;
-  }
-  if (isScanning) { stopScan(); return; }
+// ═══════════════════════════════════════════════════════════════════════════
+// SCAN MANUEL
+// ═══════════════════════════════════════════════════════════════════════════
+async function toggleScan(){
+  if(!('NDEFReader' in window)){ openRegisterModal(generateFakeUID(),true,false); return; }
+  if(isScanning){ stopScan(); return; }
   startScan();
 }
-
-async function startScan() {
-  try {
-    nfcReader = new NDEFReader();
+async function startScan(){
+  try{
+    nfcReader=new NDEFReader();
     await nfcReader.scan();
-    isScanning = true;
-    setScanUI(true);
-    setStatus('active', '⟳ En attente d\'un tag… Approchez votre tag.');
-
-    nfcReader.addEventListener('reading', ({ serialNumber, message }) => {
-      const uid = serialNumber.toUpperCase();
-      handleTagScan(uid, message);
+    isScanning=true; setScanUI(true);
+    setStatus('active','⟳ En attente d\'un tag… Approchez votre téléphone.');
+    nfcReader.addEventListener('reading',({serialNumber})=>{
+      handleTagScan(serialNumber.toUpperCase());
     });
-    nfcReader.addEventListener('readingerror', () => {
-      setStatus('error', '✕ Erreur de lecture — réessayez.');
-    });
-  } catch(e) {
-    setStatus('error', '✕ ' + (e.message || 'Permission refusée'));
+    nfcReader.addEventListener('readingerror',()=>setStatus('error','✕ Erreur de lecture.'));
+  }catch(e){
+    setStatus('error','✕ '+(e.message||'Permission refusée'));
     setScanUI(false);
   }
 }
+function stopScan(){ isScanning=false; setScanUI(false); setStatus('','Scan arrêté.'); nfcReader=null; }
 
-function stopScan() {
-  isScanning = false;
-  setScanUI(false);
-  setStatus('', 'Scan arrêté.');
-  nfcReader = null;
-}
-
-function handleTagScan(uid, message) {
-  const db = loadDB();
-  const stats = loadStats();
-  stats.totalScans = (stats.totalScans || 0) + 1;
-  saveStats(stats);
-  updateStats();
-
-  if (db[uid]) {
-    db[uid].lastSeen = new Date().toISOString();
-    db[uid].scanCount = (db[uid].scanCount || 0) + 1;
-    saveDB(db);
-    renderList();
-    setStatus('active', `✓ Tag reconnu : ${db[uid].name}`);
-    openDetailModal(uid);
-  } else {
-    setStatus('active', `◈ Nouveau tag détecté : ${uid}`);
-    // Tag vierge → demander un nom, et on écrira l'URL dessus
-    pendingWriteUID = uid;
-    openRegisterModal(uid, false, true);
-  }
-}
-
-// ─── MODAL ENREGISTREMENT ─────────────────────────────────────────────────
-function openRegisterModal(uid, manual, willWrite) {
-  currentUID = uid;
-  editUID = null;
-  pendingWriteUID = willWrite ? uid : null;
-
-  document.getElementById('modal-badge').textContent = manual ? 'AJOUT MANUEL' : 'NOUVEAU TAG DÉTECTÉ';
-  document.getElementById('modal-title').textContent = 'Enregistrer ce tag';
-  document.getElementById('modal-uid').textContent = 'UID : ' + uid;
-  document.getElementById('tag-name-input').value = '';
-  document.getElementById('write-status').className = 'write-status';
-  document.getElementById('write-status').textContent = '';
-
-  if (willWrite) {
-    document.getElementById('write-status').className = 'write-status visible writing';
-    document.getElementById('write-status').textContent = '✎ Le lien sera écrit sur le tag après sauvegarde';
-  }
-
-  selectedEmoji = '📦';
-  document.querySelectorAll('.emoji-btn').forEach(b => b.classList.toggle('selected', b.textContent === '📦'));
-  document.getElementById('register-modal').classList.add('open');
-  setTimeout(() => document.getElementById('tag-name-input').focus(), 100);
-}
-
-function openEditModal(uid) {
-  const db = loadDB();
-  const tag = db[uid];
-  if (!tag) return;
-  currentUID = uid;
-  editUID = uid;
-  pendingWriteUID = null;
-
-  document.getElementById('modal-badge').textContent = 'MODIFIER LE TAG';
-  document.getElementById('modal-title').textContent = 'Modifier';
-  document.getElementById('modal-uid').textContent = 'UID : ' + uid;
-  document.getElementById('tag-name-input').value = tag.name;
-  document.getElementById('write-status').className = 'write-status';
-
-  selectedEmoji = tag.emoji || '📦';
-  document.querySelectorAll('.emoji-btn').forEach(b => b.classList.toggle('selected', b.textContent === selectedEmoji));
-  document.getElementById('register-modal').classList.add('open');
-  setTimeout(() => document.getElementById('tag-name-input').focus(), 100);
-}
-
-function closeModal() {
-  document.getElementById('register-modal').classList.remove('open');
-  currentUID = null; editUID = null; pendingWriteUID = null;
-}
-
-// ─── SAUVEGARDE + ÉCRITURE SUR LE TAG ─────────────────────────────────────
-async function saveTag() {
-  const name = document.getElementById('tag-name-input').value.trim();
-  if (!name) {
-    document.getElementById('tag-name-input').style.borderBottomColor = 'var(--red)';
-    setTimeout(() => document.getElementById('tag-name-input').style.borderBottomColor = '', 1000);
-    return;
-  }
-
-  const uid = currentUID;
-  const isEdit = !!editUID;
-  const db = loadDB();
-
-  if (isEdit) {
-    db[uid].name = name;
-    db[uid].emoji = selectedEmoji;
-    db[uid].updatedAt = new Date().toISOString();
-  } else {
-    db[uid] = {
-      name, emoji: selectedEmoji, uid,
-      createdAt: new Date().toISOString(),
-      lastSeen: new Date().toISOString(),
-      scanCount: 1,
-      written: false
-    };
-  }
-
-  // Écrire l'URL sur le tag si NFC disponible et tag physique scanné
-  if (pendingWriteUID && 'NDEFReader' in window) {
-    const tagURL = `${APP_URL}?uid=${uid}`;
-    const ws = document.getElementById('write-status');
-    ws.className = 'write-status visible writing';
-    ws.textContent = '✎ Approchez le tag pour y écrire le lien…';
-    document.getElementById('save-btn').disabled = true;
-
-    try {
-      const writer = new NDEFReader();
-      await writer.write({ records: [{ recordType: 'url', data: tagURL }] });
-      db[uid].written = true;
-      ws.className = 'write-status visible done';
-      ws.textContent = '✓ Lien écrit sur le tag avec succès !';
-      saveDB(db);
-      renderList();
-      updateStats();
-      setTimeout(() => {
-        closeModal();
-        showToast('✓ Tag enregistré et lien écrit !', 'success');
-        highlightCard(uid);
-      }, 1200);
-    } catch(e) {
-      ws.className = 'write-status visible fail';
-      ws.textContent = '✕ Écriture échouée — tag quand même enregistré.';
-      saveDB(db);
-      renderList();
-      updateStats();
-      document.getElementById('save-btn').disabled = false;
-      setTimeout(() => {
-        closeModal();
-        showToast('Tag enregistré (écriture NFC échouée)', '');
-        highlightCard(uid);
-      }, 2000);
+function handleTagScan(uid){
+  const db=loadDB(), stats=loadStats();
+  stats.totalScans=(stats.totalScans||0)+1; saveStats(stats); updateStats();
+  if(db[uid]){
+    db[uid].lastSeen=new Date().toISOString();
+    db[uid].scanCount=(db[uid].scanCount||0)+1;
+    saveDB(db); renderList();
+    addScanToHistory(uid, db[uid]);
+    const status=db[uid].status||'available';
+    if(status==='lent'||status==='lost'){
+      setStatus('active',`⚠ Tag ${status==='lent'?'prêté':'perdu'} scanné : ${db[uid].name}`);
+      openReturnModal(uid);
+    } else {
+      setStatus('active',`✓ Tag reconnu : ${db[uid].name}`);
+      openDetailModal(uid);
     }
   } else {
-    saveDB(db);
-    renderList();
-    updateStats();
-    closeModal();
-    showToast(isEdit ? '✓ Tag modifié' : '✓ Tag enregistré', 'success');
-    highlightCard(uid);
+    setStatus('active',`◈ Nouveau tag : ${uid}`);
+    pendingWriteUID=uid;
+    openRegisterModal(uid,false,true);
   }
 }
 
-function highlightCard(uid) {
-  setTimeout(() => {
-    const card = document.querySelector(`[data-uid="${uid}"]`);
-    if (card) { card.classList.add('highlight'); setTimeout(() => card.classList.remove('highlight'), 2000); }
-  }, 100);
+// ═══════════════════════════════════════════════════════════════════════════
+// MODAL REGISTER / EDIT
+// ═══════════════════════════════════════════════════════════════════════════
+function openRegisterModal(uid,manual,willWrite){
+  currentUID=uid; editUID=null; pendingWriteUID=willWrite?uid:null;
+  currentPhoto=null; selectedStatus='available'; selectedEmoji='📦';
+
+  document.getElementById('modal-badge').textContent=manual?'AJOUT MANUEL':'NOUVEAU TAG DÉTECTÉ';
+  document.getElementById('modal-title').textContent='Enregistrer ce tag';
+  document.getElementById('modal-uid').textContent='UID : '+uid;
+  document.getElementById('tag-name-input').value='';
+  document.getElementById('tag-notes').value='';
+  document.getElementById('borrower-input').value='';
+  resetPhotoUI();
+  applyStatusUI('available');
+  document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.toggle('selected',b.textContent==='📦'));
+  populateCatSelect();
+
+  const ws=document.getElementById('write-status');
+  if(willWrite){ ws.className='write-status visible writing'; ws.textContent='✎ Le lien sera écrit sur le tag après sauvegarde'; }
+  else { ws.className='write-status'; }
+
+  document.getElementById('save-btn').disabled=false;
+  document.getElementById('register-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('tag-name-input').focus(),100);
 }
 
-// ─── MODAL DÉTAIL ─────────────────────────────────────────────────────────
-function openDetailModal(uid) {
-  const db = loadDB();
-  const tag = db[uid];
-  if (!tag) return;
-  detailUID = uid;
+function openEditModal(uid){
+  const db=loadDB(), tag=db[uid]; if(!tag) return;
+  currentUID=uid; editUID=uid; pendingWriteUID=null;
+  currentPhoto=tag.photo||null; selectedStatus=tag.status||'available'; selectedEmoji=tag.emoji||'📦';
 
-  document.getElementById('detail-name').textContent = (tag.emoji || '📦') + '  ' + tag.name;
-  const rows = [
-    ['UID', uid],
-    ['LIEN ÉCRIT', tag.written ? '✓ Oui' : '✕ Non'],
-    ['ENREGISTRÉ', formatDate(tag.createdAt)],
-    ['DERNIER SCAN', formatDate(tag.lastSeen)],
-    ['NB. SCANS', tag.scanCount || 1],
+  document.getElementById('modal-badge').textContent='MODIFIER';
+  document.getElementById('modal-title').textContent='Modifier ce tag';
+  document.getElementById('modal-uid').textContent='UID : '+uid;
+  document.getElementById('tag-name-input').value=tag.name;
+  document.getElementById('tag-notes').value=tag.notes||'';
+  document.getElementById('borrower-input').value=tag.borrower||'';
+  document.getElementById('write-status').className='write-status';
+  applyStatusUI(selectedStatus);
+  document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.toggle('selected',b.textContent===selectedEmoji));
+  populateCatSelect(tag.category);
+
+  // Photo
+  if(currentPhoto){
+    const prev=document.getElementById('photo-preview');
+    prev.src=currentPhoto; prev.style.display='block';
+    document.getElementById('photo-label').style.display='none';
+    document.getElementById('photo-remove').style.display='block';
+  } else { resetPhotoUI(); }
+
+  document.getElementById('save-btn').disabled=false;
+  document.getElementById('register-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('tag-name-input').focus(),100);
+}
+
+function closeModal(){
+  document.getElementById('register-modal').classList.remove('open');
+  currentUID=null; editUID=null; pendingWriteUID=null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SAVE TAG
+// ═══════════════════════════════════════════════════════════════════════════
+async function saveTag(){
+  const name=document.getElementById('tag-name-input').value.trim();
+  if(!name){ flashInput('tag-name-input'); return; }
+
+  const uid=currentUID, isEdit=!!editUID;
+  const db=loadDB();
+  const catId=document.getElementById('cat-select').value;
+  const notes=document.getElementById('tag-notes').value.trim();
+  const borrower=selectedStatus==='lent'?document.getElementById('borrower-input').value.trim():'';
+
+  if(isEdit){
+    Object.assign(db[uid],{name,emoji:selectedEmoji,category:catId,notes,photo:currentPhoto,
+      status:selectedStatus,borrower,updatedAt:new Date().toISOString()});
+  } else {
+    db[uid]={name,emoji:selectedEmoji,uid,category:catId,notes,photo:currentPhoto,
+      status:selectedStatus,borrower,
+      createdAt:new Date().toISOString(),lastSeen:new Date().toISOString(),scanCount:1,written:false};
+  }
+
+  if(pendingWriteUID&&'NDEFReader' in window){
+    const ws=document.getElementById('write-status');
+    ws.className='write-status visible writing'; ws.textContent='✎ Approchez le tag pour écrire le lien…';
+    document.getElementById('save-btn').disabled=true;
+    try{
+      const writer=new NDEFReader();
+      await writer.write({records:[{recordType:'url',data:`${APP_URL}?uid=${uid}`}]});
+      db[uid].written=true; ws.className='write-status visible done';
+      ws.textContent='✓ Lien écrit sur le tag !';
+      saveDB(db); renderList(); updateStats(); renderCatTabs();
+      setTimeout(()=>{ closeModal(); showToast('✓ Tag enregistré et lien écrit !','success'); highlightCard(uid); },1200);
+    } catch(e){
+      ws.className='write-status visible fail'; ws.textContent='✕ Écriture NFC échouée — tag quand même enregistré.';
+      saveDB(db); renderList(); updateStats(); renderCatTabs();
+      document.getElementById('save-btn').disabled=false;
+      setTimeout(()=>{ closeModal(); showToast('Tag enregistré (écriture NFC échouée)',''); highlightCard(uid); },2000);
+    }
+  } else {
+    saveDB(db); renderList(); updateStats(); renderCatTabs();
+    closeModal(); showToast(isEdit?'✓ Tag modifié':'✓ Tag enregistré','success'); highlightCard(uid);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DETAIL MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+function openDetailModal(uid){
+  const db=loadDB(), tag=db[uid]; if(!tag) return;
+  detailUID=uid;
+  const cats=loadCats(), cat=cats.find(c=>c.id===tag.category);
+
+  document.getElementById('detail-name').textContent=(tag.emoji||'📦')+'  '+tag.name;
+
+  const banner=document.getElementById('detail-status-banner');
+  banner.className='detail-status-banner '+(tag.status||'available');
+  banner.textContent=STATUS_LABELS[tag.status||'available']+(tag.status==='lent'&&tag.borrower?' À '+tag.borrower.toUpperCase():'');
+
+  const ph=document.getElementById('detail-photo');
+  if(tag.photo){ ph.src=tag.photo; ph.style.display='block'; } else { ph.style.display='none'; }
+
+  const notesEl=document.getElementById('detail-notes');
+  if(tag.notes){ notesEl.textContent=tag.notes; notesEl.style.display='block'; } else { notesEl.style.display='none'; }
+
+  const rows=[
+    ['UID',uid],
+    ['CATÉGORIE',cat?cat.name:'—'],
+    ['LIEN ÉCRIT',tag.written?'✓ Oui':'✕ Non'],
+    ['ENREGISTRÉ',formatDate(tag.createdAt)],
+    ['DERNIER SCAN',formatDate(tag.lastSeen)],
+    ['NB. SCANS',tag.scanCount||1],
   ];
-  document.getElementById('detail-rows').innerHTML = rows.map(([k,v]) =>
-    `<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`
+  document.getElementById('detail-rows').innerHTML=rows.map(([k,v])=>
+    `<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${escHtml(String(v))}</span></div>`
   ).join('');
+
   document.getElementById('detail-modal').classList.add('open');
 }
+function closeDetailModal(){ document.getElementById('detail-modal').classList.remove('open'); detailUID=null; }
+function editFromDetail(){ const u=detailUID; closeDetailModal(); openEditModal(u); }
 
-function closeDetailModal() {
-  document.getElementById('detail-modal').classList.remove('open');
-  detailUID = null;
+// ═══════════════════════════════════════════════════════════════════════════
+// RETURN MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+function openReturnModal(uid){
+  const db=loadDB(), tag=db[uid]; if(!tag) return;
+  detailUID=uid;
+  const isLent=tag.status==='lent';
+  document.getElementById('return-badge').textContent=isLent?'TAG PRÊTÉ SCANNÉ':'TAG PERDU SCANNÉ';
+  document.getElementById('return-badge').style.color=isLent?'var(--orange)':'var(--red)';
+  document.getElementById('return-title').textContent=(tag.emoji||'📦')+' '+tag.name;
+  const banner=document.getElementById('return-status-banner');
+  banner.className='detail-status-banner '+(tag.status);
+  banner.textContent=isLent?('🟡 PRÊTÉ À '+(tag.borrower||'—').toUpperCase()):'🔴 PERDU';
+  document.getElementById('return-msg').innerHTML=
+    isLent
+      ? `L'objet <strong>${escHtml(tag.name)}</strong> était prêté${tag.borrower?' à <strong>'+escHtml(tag.borrower)+'</strong>':''}.<br>Il vient d'être scanné — veux-tu le marquer comme disponible ?`
+      : `L'objet <strong>${escHtml(tag.name)}</strong> était marqué perdu.<br>Il vient d'être retrouvé et scanné — veux-tu le marquer comme disponible ?`;
+  document.getElementById('return-modal').classList.add('open');
+}
+function closeReturnModal(){
+  document.getElementById('return-modal').classList.remove('open');
+  openDetailModal(detailUID);
+}
+function markAsAvailable(){
+  const db=loadDB(), uid=detailUID; if(!db[uid]) return;
+  db[uid].status='available'; db[uid].borrower=''; db[uid].returnedAt=new Date().toISOString();
+  saveDB(db); renderList(); updateStats();
+  document.getElementById('return-modal').classList.remove('open');
+  setStatus('active',`✓ ${db[uid].name} marqué comme disponible`);
+  showToast('✓ Objet remis en disponible','success');
+  highlightCard(uid);
 }
 
-function editFromDetail() {
-  const uid = detailUID;
-  closeDetailModal();
-  openEditModal(uid);
+// ═══════════════════════════════════════════════════════════════════════════
+// DELETE
+// ═══════════════════════════════════════════════════════════════════════════
+function deleteTag(uid){
+  const db=loadDB(), name=db[uid]?.name||uid;
+  if(!confirm(`Supprimer "${name}" ?`)) return;
+  delete db[uid]; saveDB(db); renderList(); updateStats(); renderCatTabs();
+  showToast('🗑 Tag supprimé','error-t');
 }
 
-// ─── DELETE ───────────────────────────────────────────────────────────────
-function deleteTag(uid) {
-  const db = loadDB();
-  const name = db[uid]?.name || uid;
-  if (!confirm(`Supprimer le tag "${name}" ?`)) return;
-  delete db[uid];
-  saveDB(db);
-  renderList();
-  updateStats();
-  showToast('🗑 Tag supprimé', 'error-t');
+// ═══════════════════════════════════════════════════════════════════════════
+// EXPORT / IMPORT
+// ═══════════════════════════════════════════════════════════════════════════
+function exportData(){
+  const data={tags:loadDB(), categories:loadCats(), stats:loadStats(), exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`nfc-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast('✓ Sauvegarde exportée','success');
 }
 
-// ─── RENDER ───────────────────────────────────────────────────────────────
-function renderList(filter = '') {
-  const db = loadDB();
-  const list = document.getElementById('tag-list');
-  const keys = Object.keys(db).filter(uid => {
-    if (!filter) return true;
-    return db[uid].name.toLowerCase().includes(filter.toLowerCase()) || uid.toLowerCase().includes(filter.toLowerCase());
+function importData(e){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      if(!data.tags) throw new Error('Format invalide');
+      if(!confirm(`Importer ${Object.keys(data.tags).length} tags ? Cela fusionnera avec vos données existantes.`)) return;
+      const db=loadDB();
+      Object.assign(db, data.tags); saveDB(db);
+      if(data.categories) saveCats(data.categories);
+      renderList(); updateStats(); renderCatTabs(); populateCatSelect();
+      showToast('✓ Import réussi','success');
+    }catch(err){ showToast('✕ Fichier invalide','error-t'); }
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CATEGORIES
+// ═══════════════════════════════════════════════════════════════════════════
+function renderCatTabs(){
+  const db=loadDB(), cats=loadCats();
+  const usedCatIds=new Set(Object.values(db).map(t=>t.category).filter(Boolean));
+  const tabs=document.getElementById('cat-tabs');
+
+  const all=document.createElement('button');
+  all.className='cat-tab'+(activeFilter==='all'?' active':'');
+  all.textContent='TOUS';
+  all.onclick=()=>{ activeFilter='all'; renderCatTabs(); filterTags(); };
+  tabs.innerHTML=''; tabs.appendChild(all);
+
+  cats.filter(c=>usedCatIds.has(c.id)).forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='cat-tab'+(activeFilter===c.id?' active':'');
+    btn.style.setProperty('--tab-color',c.color);
+    btn.dataset.color=c.color; btn.textContent=c.name.toUpperCase();
+    btn.onclick=()=>{ activeFilter=c.id; renderCatTabs(); filterTags(); };
+    tabs.appendChild(btn);
   });
+}
 
-  if (keys.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📡</div>AUCUN TAG ENREGISTRÉ<br><br>Scannez un tag pour commencer.</div>`;
+function populateCatSelect(selected=''){
+  const cats=loadCats(), sel=document.getElementById('cat-select');
+  sel.innerHTML=cats.map(c=>`<option value="${c.id}"${c.id===selected?' selected':''}>${c.name}</option>`).join('');
+}
+
+function openCatModal(){
+  renderCatListUI();
+  document.getElementById('new-cat-name').value='';
+  document.getElementById('cat-modal').classList.add('open');
+}
+function closeCatModal(){ document.getElementById('cat-modal').classList.remove('open'); }
+
+function renderCatListUI(){
+  const cats=loadCats();
+  document.getElementById('cat-list-ui').innerHTML=cats.map(c=>`
+    <div class="cat-list-item">
+      <div class="cat-dot" style="background:${c.color}"></div>
+      <span class="cat-item-name">${escHtml(c.name)}</span>
+      <button class="cat-item-del" onclick="deleteCat('${c.id}')">✕</button>
+    </div>`).join('');
+}
+
+function addCategory(){
+  const name=document.getElementById('new-cat-name').value.trim();
+  if(!name) return;
+  const cats=loadCats();
+  if(cats.find(c=>c.name.toLowerCase()===name.toLowerCase())){ showToast('Catégorie déjà existante','error-t'); return; }
+  cats.push({id:'cat_'+Date.now(), name, color:selectedColor});
+  saveCats(cats); renderCatListUI(); renderCatTabs(); populateCatSelect();
+  document.getElementById('new-cat-name').value='';
+  showToast('✓ Catégorie ajoutée','success');
+}
+
+function deleteCat(id){
+  const cats=loadCats().filter(c=>c.id!==id);
+  saveCats(cats); renderCatListUI(); renderCatTabs();
+}
+
+function buildColorPicker(){
+  const row=document.getElementById('color-pick-row');
+  CAT_COLORS.forEach((c,i)=>{
+    const d=document.createElement('div');
+    d.className='color-pick'+(i===0?' selected':'');
+    d.style.background=c;
+    d.onclick=()=>{
+      selectedColor=c;
+      document.querySelectorAll('.color-pick').forEach(el=>el.classList.toggle('selected',el.style.background===c||el.style.backgroundColor===c));
+    };
+    row.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHOTO
+// ═══════════════════════════════════════════════════════════════════════════
+async function handlePhotoUpload(e){
+  const file=e.target.files[0]; if(!file) return;
+  currentPhoto=await compressPhoto(file);
+  const prev=document.getElementById('photo-preview');
+  prev.src=currentPhoto; prev.style.display='block';
+  document.getElementById('photo-label').style.display='none';
+  document.getElementById('photo-remove').style.display='block';
+}
+
+function removePhoto(e){
+  e.stopPropagation(); e.preventDefault();
+  currentPhoto=null; resetPhotoUI();
+}
+
+function resetPhotoUI(){
+  const prev=document.getElementById('photo-preview');
+  prev.src=''; prev.style.display='none';
+  document.getElementById('photo-label').style.display='block';
+  document.getElementById('photo-remove').style.display='none';
+}
+
+async function compressPhoto(file){
+  return new Promise(res=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=480; let w=img.width, h=img.height;
+        if(w>h&&w>MAX){h=h*MAX/w;w=MAX;} else if(h>MAX){w=w*MAX/h;h=MAX;}
+        const canvas=document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        res(canvas.toDataURL('image/jpeg',0.65));
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATUS
+// ═══════════════════════════════════════════════════════════════════════════
+function selectStatus(val){
+  selectedStatus=val; applyStatusUI(val);
+}
+function applyStatusUI(val){
+  document.querySelectorAll('.status-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===val));
+  document.getElementById('borrower-field').style.display=val==='lent'?'block':'none';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER LIST
+// ═══════════════════════════════════════════════════════════════════════════
+function renderList(filter=''){
+  const db=loadDB(), cats=loadCats();
+  const list=document.getElementById('tag-list');
+  let keys=Object.keys(db);
+
+  if(activeFilter!=='all') keys=keys.filter(uid=>db[uid].category===activeFilter);
+  if(activeStatusFilter!=='all') keys=keys.filter(uid=>(db[uid].status||'available')===activeStatusFilter);
+  if(filter) keys=keys.filter(uid=>db[uid].name.toLowerCase().includes(filter.toLowerCase())||uid.toLowerCase().includes(filter.toLowerCase()));
+
+  if(keys.length===0){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">📡</div>AUCUN TAG${activeFilter!=='all'?' DANS CETTE CATÉGORIE':' ENREGISTRÉ'}<br><br>Scannez un tag pour commencer.</div>`;
     return;
   }
 
-  keys.sort((a,b) => new Date(db[b].createdAt) - new Date(db[a].createdAt));
-  list.innerHTML = keys.map(uid => {
-    const t = db[uid];
-    const badge = t.written
-      ? `<span class="written-badge">LIEN ✓</span>`
-      : `<span class="unwritten-badge">SANS LIEN</span>`;
-    return `
-      <div class="tag-card" data-uid="${uid}">
-        <div class="tag-icon">${t.emoji || '📦'}</div>
-        <div class="tag-info">
-          <div class="tag-name">${escHtml(t.name)}${badge}</div>
-          <div class="tag-uid">${uid}</div>
-          <div class="tag-meta">${formatDate(t.createdAt)} · ${t.scanCount || 1} scan(s)</div>
+  keys.sort((a,b)=>new Date(db[b].createdAt)-new Date(db[a].createdAt));
+  list.innerHTML=keys.map(uid=>{
+    const t=db[uid], cat=cats.find(c=>c.id===t.category);
+    const statusBadge=t.status==='lent'
+      ?`<span class="badge badge-lent">PRÊTÉ${t.borrower?' À '+escHtml(t.borrower):''}</span>`
+      :t.status==='lost'?`<span class="badge badge-lost">PERDU</span>`
+      :`<span class="badge badge-available">DISPO</span>`;
+    const catBadge=cat?`<span class="badge badge-cat" style="--badge-color:${cat.color}">${escHtml(cat.name)}</span>`:'';
+    const writeBadge=t.written?`<span class="badge badge-written">LIEN ✓</span>`:  `<span class="badge badge-unwritten">SANS LIEN</span>`;
+    const imgEl=t.photo?`<img class="tag-photo-thumb" src="${t.photo}" alt=""/>`:
+      `<div class="tag-icon">${t.emoji||'📦'}</div>`;
+
+    return `<div class="tag-card" data-uid="${uid}" data-status="${t.status||'available'}">
+      ${imgEl}
+      <div class="tag-info">
+        <div class="tag-name-row">
+          <span class="tag-name">${escHtml(t.name)}</span>
+          ${statusBadge}
         </div>
-        <div class="tag-actions">
-          <button class="btn-icon" title="Modifier" onclick="openEditModal('${uid}')">✏️</button>
-          <button class="btn-icon delete" title="Supprimer" onclick="deleteTag('${uid}')">🗑</button>
-        </div>
-      </div>`;
+        <div class="tag-uid">${uid}</div>
+        <div class="tag-meta">${catBadge} ${writeBadge}</div>
+      </div>
+      <div class="tag-actions">
+        <button class="btn-icon" title="Voir" onclick="openDetailModal('${uid}')">👁</button>
+        <button class="btn-icon" title="QR Code" onclick="openQRModal('${uid}')">⬛</button>
+        <button class="btn-icon" title="Modifier" onclick="openEditModal('${uid}')">✏️</button>
+        <button class="btn-icon delete" title="Supprimer" onclick="deleteTag('${uid}')">🗑</button>
+      </div>
+    </div>`;
   }).join('');
 }
 
-function filterTags() { renderList(document.getElementById('search-input').value); }
+function filterTags(){ renderList(document.getElementById('search-input').value); }
 
-function updateStats() {
-  const db = loadDB();
-  const keys = Object.keys(db);
-  const today = new Date().toDateString();
-  document.getElementById('stat-total').textContent = keys.length;
-  document.getElementById('stat-today').textContent = keys.filter(uid => new Date(db[uid].createdAt).toDateString() === today).length;
-  document.getElementById('stat-scanned').textContent = loadStats().totalScans || 0;
+function updateStats(){
+  const db=loadDB(), keys=Object.keys(db);
+  const lent=keys.filter(u=>db[u].status==='lent').length;
+  document.getElementById('stat-total').textContent=keys.length;
+  document.getElementById('stat-lent').textContent=lent;
+  document.getElementById('stat-scanned').textContent=loadStats().totalScans||0;
 }
 
-// ─── UI HELPERS ───────────────────────────────────────────────────────────
-function setScanUI(active) {
-  const btn = document.getElementById('scan-btn');
-  const label = document.getElementById('scan-label');
-  const waves = `<span class="scan-waves"><span class="wave-ring"></span><span class="wave-ring"></span><span class="wave-ring"></span></span>`;
-  btn.classList.toggle('scanning', active);
-  label.innerHTML = waves + (active ? '&nbsp;&nbsp;APPROCHEZ UN TAG' : '&nbsp;&nbsp;SCANNER UN TAG');
+// ═══════════════════════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+function setScanUI(active){
+  const btn=document.getElementById('scan-btn'), label=document.getElementById('scan-label');
+  const waves=`<span class="scan-waves"><span class="wave-ring"></span><span class="wave-ring"></span><span class="wave-ring"></span></span>`;
+  btn.classList.toggle('scanning',active);
+  label.innerHTML=waves+(active?'&nbsp;&nbsp;APPROCHEZ UN TAG':'&nbsp;&nbsp;SCANNER UN TAG');
 }
-
-function setStatus(type, msg) {
-  document.getElementById('status-dot').className = 'status-dot' + (type ? ' ' + type : '');
-  document.getElementById('status-text').textContent = msg;
+function setStatus(type,msg){
+  document.getElementById('status-dot').className='status-dot'+(type?' '+type:'');
+  document.getElementById('status-text').textContent=msg;
 }
-
 let toastTimer;
-function showToast(msg, type = '') {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.className = 'toast show ' + type;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.className = 'toast', 3000);
+function showToast(msg,type=''){
+  const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show '+type;
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.className='toast',3000);
 }
-
-function formatDate(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' }) + ' ' +
-         d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
+function highlightCard(uid){
+  setTimeout(()=>{ const c=document.querySelector(`[data-uid="${uid}"]`); if(c){c.classList.add('highlight');setTimeout(()=>c.classList.remove('highlight'),2000);}},100);
 }
+function flashInput(id){ const el=document.getElementById(id); el.style.borderBottomColor='var(--red)'; setTimeout(()=>el.style.borderBottomColor='',1000); }
+function formatDate(iso){ if(!iso) return '—'; const d=new Date(iso); return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function generateFakeUID(){ return Array.from({length:7},()=>Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()).join(':'); }
 
-function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function generateFakeUID() { return Array.from({length:7}, ()=>Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()).join(':'); }
-
-function buildEmojiPicker() {
-  const row = document.getElementById('emoji-row');
-  EMOJIS.forEach(e => {
-    const btn = document.createElement('button');
-    btn.className = 'emoji-btn' + (e === selectedEmoji ? ' selected' : '');
-    btn.textContent = e;
-    btn.onclick = () => { selectedEmoji = e; document.querySelectorAll('.emoji-btn').forEach(b => b.classList.toggle('selected', b.textContent === e)); };
+function buildEmojiPicker(){
+  const row=document.getElementById('emoji-row');
+  EMOJIS.forEach(e=>{
+    const btn=document.createElement('button'); btn.className='emoji-btn'; btn.textContent=e;
+    btn.onclick=()=>{ selectedEmoji=e; document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.toggle('selected',b.textContent===e)); };
     row.appendChild(btn);
   });
 }
 
-document.getElementById('register-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
-document.getElementById('detail-modal').addEventListener('click', e => { if(e.target===e.currentTarget) closeDetailModal(); });
+// Close on overlay click
+['register-modal','detail-modal','cat-modal','return-modal','history-modal','qr-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',e=>{ if(e.target===e.currentTarget) document.getElementById(id).classList.remove('open'); });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THEME
+// ═══════════════════════════════════════════════════════════════════════════
+function initTheme(){
+  const saved=localStorage.getItem(THEME_KEY)||'dark';
+  if(saved==='light') applyTheme('light');
+  else applyTheme('dark');
+}
+function toggleTheme(){
+  const isLight=document.body.classList.contains('light');
+  applyTheme(isLight?'dark':'light');
+  localStorage.setItem(THEME_KEY, isLight?'dark':'light');
+}
+function applyTheme(t){
+  document.body.classList.toggle('light', t==='light');
+  document.getElementById('theme-btn').textContent=t==='light'?'🌙':'☀️';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATUS FILTER
+// ═══════════════════════════════════════════════════════════════════════════
+function setStatusFilter(val){
+  activeStatusFilter=val;
+  document.querySelectorAll('.sf-btn').forEach(b=>b.classList.toggle('active',b.dataset.sf===val));
+  filterTags();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════════════════════════════════════
+function addScanToHistory(uid, tag){
+  const h=loadHistory();
+  h.unshift({uid, name:tag.name, emoji:tag.emoji||'📦', status:tag.status||'available', scannedAt:new Date().toISOString()});
+  if(h.length>20) h.splice(20);
+  saveHistory(h);
+}
+function openHistoryModal(){
+  const h=loadHistory(), db=loadDB();
+  const list=document.getElementById('history-list');
+  if(h.length===0){
+    list.innerHTML=`<div class="empty-state" style="padding:30px"><div class="empty-icon">📋</div>AUCUN SCAN ENREGISTRÉ</div>`;
+  } else {
+    const statusColors={available:'var(--green)',lent:'var(--orange)',lost:'var(--red)'};
+    const statusLabels={available:'DISPO',lent:'PRÊTÉ',lost:'PERDU'};
+    list.innerHTML=h.map(e=>`
+      <div class="history-item" onclick="closeHistoryModal();openDetailModal('${e.uid}')" style="cursor:pointer">
+        <span class="history-emoji">${e.emoji}</span>
+        <div class="history-info">
+          <div class="history-name">${escHtml(e.name)}</div>
+          <div class="history-time">${formatDate(e.scannedAt)}</div>
+        </div>
+        <span class="history-status" style="border-color:${statusColors[e.status]||'var(--muted)'};color:${statusColors[e.status]||'var(--muted)'}">
+          ${statusLabels[e.status]||'—'}
+        </span>
+      </div>`).join('');
+  }
+  document.getElementById('history-modal').classList.add('open');
+}
+function closeHistoryModal(){ document.getElementById('history-modal').classList.remove('open'); }
+function clearHistory(){ if(!confirm('Effacer tout l\'historique ?')) return; saveHistory([]); closeHistoryModal(); showToast('Historique effacé',''); }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// QR CODE
+// ═══════════════════════════════════════════════════════════════════════════
+function openQRModal(uid){
+  const db=loadDB(), tag=db[uid]; if(!tag) return;
+  currentQRUID=uid;
+  document.getElementById('qr-title').textContent=(tag.emoji||'📦')+' '+tag.name;
+  document.getElementById('qr-uid').textContent='UID : '+uid;
+  const url=`${APP_URL}?uid=${uid}`;
+  document.getElementById('qr-url-text').textContent=url;
+  const canvas=document.getElementById('qr-canvas');
+  canvas.innerHTML='';
+  new QRCode(canvas,{text:url,width:180,height:180,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  document.getElementById('qr-modal').classList.add('open');
+}
+function closeQRModal(){ document.getElementById('qr-modal').classList.remove('open'); currentQRUID=null; }
+function downloadQR(){
+  const canvas=document.querySelector('#qr-canvas canvas');
+  if(!canvas){ showToast('QR non disponible','error-t'); return; }
+  const db=loadDB(), tag=currentQRUID?db[currentQRUID]:null;
+  const name=(tag?.name||'tag').replace(/[^a-z0-9]/gi,'-').toLowerCase();
+  const a=document.createElement('a'); a.download=`qr-nfc-${name}.png`; a.href=canvas.toDataURL('image/png'); a.click();
+  showToast('✓ QR Code téléchargé','success');
+}
 </script>
 </body>
 </html>
