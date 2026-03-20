@@ -100,12 +100,12 @@ body.light .stat-val{text-shadow:none;}
 .stat-val.orange{color:var(--orange);}.stat-val.red{color:var(--red);}.stat-val.green{color:var(--green);}
 
 /* ── TOOLBAR ── */
-.toolbar{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;}
-.tool-btn{flex:1;min-width:0;padding:7px 5px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:9px;letter-spacing:1px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:3px;white-space:nowrap;}
+.toolbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:5px;margin-bottom:6px;}
+.tool-btn{padding:8px 4px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:0;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;}
 .tool-btn:hover{border-color:var(--cyan);color:var(--cyan);}
 .tool-btn.install-btn{border-color:var(--green);color:var(--green);display:none;}
 .tool-btn.install-btn.visible{display:flex;}
-.tool-btn.sq{flex:0 0 32px;padding:0;font-size:14px;}
+.tool-btn.sq{padding:0;font-size:16px;}
 .tool-btn.admin-only{border-color:rgba(0,229,255,.3);}
 .locked-msg{font-family:var(--mono);font-size:10px;color:var(--muted);background:rgba(251,191,36,.05);border:1px dashed rgba(251,191,36,.25);padding:8px 12px;margin-bottom:10px;letter-spacing:1px;}
 
@@ -392,11 +392,11 @@ body.light .stat-val{text-shadow:none;}
       <h1>NFC TAG<br><span>DATABASE</span></h1>
     </div>
     <div id="first-admin-notice" class="first-admin-badge" style="display:none">
-      👑 PREMIER COMPTE = ADMINISTRATEUR
+      👑 PREMIÈRE CONNEXION — TU DEVIENDRAS ADMINISTRATEUR
     </div>
     <div class="login-tabs">
       <button class="login-tab active" id="tab-login" onclick="switchLoginTab('login')">CONNEXION</button>
-      <button class="login-tab" id="tab-register" onclick="switchLoginTab('register')">CRÉER UN COMPTE</button>
+      <button class="login-tab" id="tab-invite" onclick="switchLoginTab('invite')">CODE D'INVITATION</button>
     </div>
     <div class="login-panel">
       <!-- BIOMETRIC AUTO-PROMPT -->
@@ -424,23 +424,17 @@ body.light .stat-val{text-shadow:none;}
         </div>
         <div class="login-error" id="login-error"></div>
       </div>
-      <!-- REGISTER -->
-      <div id="panel-register" style="display:none">
-        <div class="login-field">
-          <label class="login-label">NOM D'UTILISATEUR</label>
-          <input type="text" class="login-input" id="reg-username" placeholder="Choisis un pseudo…" autocomplete="username" onkeydown="if(event.key==='Enter')doRegister()"/>
+      <!-- INVITATION CODE -->
+      <div id="panel-invite" style="display:none">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:14px;line-height:1.6;">
+          Demande un code d'invitation à l'admin.<br>Colle-le ci-dessous pour créer ton compte.
         </div>
         <div class="login-field">
-          <label class="login-label">MOT DE PASSE</label>
-          <input type="password" class="login-input" id="reg-password" placeholder="Choisis un mot de passe…" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/>
+          <label class="login-label">CODE D'INVITATION</label>
+          <textarea class="login-input" id="invite-code-input" placeholder="Colle le code ici…" style="height:80px;resize:none;font-size:10px;line-height:1.4;" onkeydown="if(event.ctrlKey&&event.key==='Enter')useInviteCode()"></textarea>
         </div>
-        <div class="login-field">
-          <label class="login-label">CONFIRMER LE MOT DE PASSE</label>
-          <input type="password" class="login-input" id="reg-password2" placeholder="Répète le mot de passe…" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/>
-        </div>
-        <button class="login-btn" onclick="doRegister()">CRÉER LE COMPTE</button>
-        <div class="login-error" id="reg-error"></div>
-        <div class="login-info" id="reg-info">Le premier compte créé sera <strong>ADMINISTRATEUR</strong>.<br>Les suivants auront un accès limité.</div>
+        <button class="login-btn" onclick="useInviteCode()">UTILISER LE CODE</button>
+        <div class="login-error" id="invite-error"></div>
       </div>
     </div>
   </div>
@@ -481,18 +475,17 @@ body.light .stat-val{text-shadow:none;}
 
   <!-- TOOLBAR ADMIN -->
   <div id="toolbar-admin">
-    <div class="toolbar" style="margin-bottom:5px;">
+    <div class="toolbar" style="grid-template-columns:repeat(4,1fr);margin-bottom:5px;">
       <button class="tool-btn" onclick="openHistoryModal()">📋 HISTORIQUE</button>
       <button class="tool-btn" onclick="openSummaryModal()">📊 RÉSUMÉ</button>
       <button class="tool-btn" onclick="requirePIN(openUsersModal)" style="border-color:var(--yellow);color:var(--yellow);">👥 COMPTES</button>
-      <button class="tool-btn sq" id="theme-btn" onclick="toggleTheme()">🌙</button>
-      <button class="tool-btn sq" id="lock-btn" onclick="requirePIN(lockApp)">🔓</button>
+      <button class="tool-btn" onclick="requirePIN(lockApp)" id="lock-btn" style="font-size:16px;">🔓</button>
     </div>
-    <div class="toolbar">
-      <button class="tool-btn install-btn" id="install-btn" onclick="installPWA()">📲 INSTALLER</button>
-      <button class="tool-btn" onclick="requirePIN(()=>exportData())">⬆ EXPORTER</button>
-      <button class="tool-btn" onclick="requirePIN(()=>document.getElementById('import-input').click())">⬇ IMPORTER</button>
+    <div class="toolbar" style="grid-template-columns:repeat(4,1fr);">
+      <button class="tool-btn" onclick="requirePIN(()=>exportData())">⬆ EXPORT</button>
+      <button class="tool-btn" onclick="requirePIN(()=>document.getElementById('import-input').click())">⬇ IMPORT</button>
       <button class="tool-btn" onclick="requirePIN(openSettingsModal)">⚙ RÉGLAGES</button>
+      <button class="tool-btn" onclick="toggleTheme()" id="theme-btn" style="font-size:16px;">🌙</button>
     </div>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
   </div>
@@ -704,6 +697,21 @@ body.light .stat-val{text-shadow:none;}
   <div class="modal" style="border-color:var(--yellow);">
     <div class="mh"><div class="mb" style="color:var(--yellow)">ADMINISTRATION</div><h2 style="margin-bottom:14px;">Gestion des comptes</h2></div>
     <div class="ms">
+      <div class="mst">CRÉER UN COMPTE UTILISATEUR</div>
+      <label class="fl">PSEUDO</label>
+      <input type="text" class="fi" id="new-user-name" placeholder="pseudo (lettres/chiffres)" maxlength="20" onkeydown="if(event.key==='Enter')document.getElementById('new-user-pass').focus()"/>
+      <label class="fl">MOT DE PASSE</label>
+      <input type="password" class="fi" id="new-user-pass" placeholder="mot de passe" onkeydown="if(event.key==='Enter')createUserAccount()"/>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button class="bp" style="flex:1;" onclick="createUserAccount()">✓ CRÉER + GÉNÉRER CODE</button>
+      </div>
+      <!-- Invite code output -->
+      <div id="invite-code-output" style="display:none;margin-bottom:14px;">
+        <div class="mst" style="border-top:none;padding-top:0;color:var(--green);">CODE D'INVITATION GÉNÉRÉ</div>
+        <textarea id="invite-code-text" readonly style="width:100%;background:var(--bg);border:1px solid var(--green);color:var(--green);font-family:var(--mono);font-size:9px;padding:8px;height:80px;outline:none;resize:none;line-height:1.4;"></textarea>
+        <button class="bp" style="width:100%;margin-top:5px;background:var(--green);" onclick="copyInviteCode()">📋 COPIER LE CODE</button>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;line-height:1.6;">Envoie ce code par WhatsApp ou SMS. L'utilisateur le colle dans "CODE D'INVITATION".</div>
+      </div>
       <div class="mst">UTILISATEURS ENREGISTRÉS</div>
       <div class="user-list" id="users-list"></div>
     </div>
@@ -781,28 +789,21 @@ function requireAdmin(){if(!isAdmin()){showToast('⛔ Accès réservé à l\'adm
 
 function initAccounts(){
   const accounts=loadAccounts();
-  const hasAccounts=Object.keys(accounts).length>0;
-  // First-time notice
-  if(!hasAccounts) document.getElementById('first-admin-notice').style.display='block';
-  // Check existing session
   const sess=sessionStorage.getItem(SESSION_KEY);
   if(sess){
     try{
       const u=JSON.parse(sess);
-      if(accounts[u.username]&&accounts[u.username].role===u.role){
-        currentUser=u;initApp();return;
-      }
+      if(accounts[u.username]&&accounts[u.username].role===u.role){currentUser=u;initApp();return;}
     }catch{}
   }
-  // Show login screen
   showLoginScreen();
 }
 
 function showLoginScreen(){
   document.getElementById('login-screen').classList.remove('hidden');
   const accounts=loadAccounts();
-  if(Object.keys(accounts).length===0) document.getElementById('first-admin-notice').style.display='block';
-  else document.getElementById('first-admin-notice').style.display='none';
+  const notice=document.getElementById('first-admin-notice');
+  notice.style.display=Object.keys(accounts).length===0?'block':'none';
   initBioAutoSection();
 }
 
@@ -827,11 +828,11 @@ function initBioAutoSection(){
 
 function switchLoginTab(tab){
   document.getElementById('tab-login').classList.toggle('active',tab==='login');
-  document.getElementById('tab-register').classList.toggle('active',tab==='register');
+  document.getElementById('tab-invite').classList.toggle('active',tab==='invite');
   document.getElementById('panel-login').style.display=tab==='login'?'block':'none';
-  document.getElementById('panel-register').style.display=tab==='register'?'block':'none';
+  document.getElementById('panel-invite').style.display=tab==='invite'?'block':'none';
   document.getElementById('login-error').textContent='';
-  document.getElementById('reg-error').textContent='';
+  document.getElementById('invite-error').textContent='';
 }
 
 function doLogin(){
@@ -840,6 +841,15 @@ function doLogin(){
   const err=document.getElementById('login-error');
   if(!username||!password){err.textContent='Remplis tous les champs.';return;}
   const accounts=loadAccounts();
+  // First ever login = auto-create admin
+  if(Object.keys(accounts).length===0){
+    accounts[username]={username,passwordHash:hashPass(password),role:'admin',createdAt:new Date().toISOString(),lastLogin:new Date().toISOString()};
+    saveAccounts(accounts);
+    currentUser={username,role:'admin'};
+    sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
+    document.getElementById('login-screen').classList.add('hidden');
+    initApp();showToast('👑 Compte admin créé !','success');return;
+  }
   const acc=accounts[username];
   if(!acc||acc.passwordHash!==hashPass(password)){err.textContent='Identifiants incorrects.';return;}
   acc.lastLogin=new Date().toISOString();saveAccounts(accounts);
@@ -849,27 +859,36 @@ function doLogin(){
   initApp();
 }
 
-function doRegister(){
-  const username=document.getElementById('reg-username').value.trim().toLowerCase();
-  const password=document.getElementById('reg-password').value;
-  const password2=document.getElementById('reg-password2').value;
-  const err=document.getElementById('reg-error');
-  if(!username||!password||!password2){err.textContent='Remplis tous les champs.';return;}
-  if(username.length<3){err.textContent='Pseudo trop court (3 car. min).';return;}
-  if(!/^[a-z0-9_]+$/.test(username)){err.textContent='Pseudo: lettres, chiffres, _ uniquement.';return;}
-  if(password.length<4){err.textContent='Mot de passe trop court (4 car. min).';return;}
-  if(password!==password2){err.textContent='Les mots de passe ne correspondent pas.';return;}
-  const accounts=loadAccounts();
-  if(accounts[username]){err.textContent='Ce pseudo est déjà pris.';return;}
-  const isFirst=Object.keys(accounts).length===0;
-  const role=isFirst?'admin':'user';
-  accounts[username]={username,passwordHash:hashPass(password),role,createdAt:new Date().toISOString(),lastLogin:new Date().toISOString()};
-  saveAccounts(accounts);
-  currentUser={username,role};
-  sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
-  document.getElementById('login-screen').classList.add('hidden');
-  initApp();
-  showToast(isFirst?'👑 Compte admin créé !':'✓ Compte créé !','success');
+// ── INVITATION CODE SYSTEM ──
+function generateInviteCode(username,passwordHash,role){
+  const data={u:username,p:passwordHash,r:role,t:Date.now(),app:'nfc_db_v5'};
+  return btoa(JSON.stringify(data));
+}
+
+function useInviteCode(){
+  const raw=document.getElementById('invite-code-input').value.trim();
+  const err=document.getElementById('invite-error');
+  if(!raw){err.textContent='Colle un code d\'invitation.';return;}
+  try{
+    const data=JSON.parse(atob(raw));
+    if(data.app!=='nfc_db_v5'||!data.u||!data.p||!data.r) throw new Error();
+    const accounts=loadAccounts();
+    if(accounts[data.u]){
+      // Already exists — just log in
+      accounts[data.u].lastLogin=new Date().toISOString();saveAccounts(accounts);
+      currentUser={username:data.u,role:data.r};
+      sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
+      document.getElementById('login-screen').classList.add('hidden');
+      initApp();showToast('✓ Compte configuré !','success');return;
+    }
+    // Create locally
+    accounts[data.u]={username:data.u,passwordHash:data.p,role:data.r,createdAt:new Date().toISOString(),lastLogin:new Date().toISOString()};
+    saveAccounts(accounts);
+    currentUser={username:data.u,role:data.r};
+    sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
+    document.getElementById('login-screen').classList.add('hidden');
+    initApp();showToast('✓ Compte activé !','success');
+  }catch{err.textContent='Code invalide ou corrompu.';}
 }
 
 function doLogout(){
@@ -1026,9 +1045,40 @@ function applyRoleUI(){
 // ════════════════════════════════════════════════════════════════
 function openUsersModal(){
   renderUsersList();
+  document.getElementById('new-user-name').value='';
+  document.getElementById('new-user-pass').value='';
+  document.getElementById('invite-code-output').style.display='none';
   document.getElementById('users-modal').classList.add('open');
 }
 function closeUsersModal(){document.getElementById('users-modal').classList.remove('open');}
+
+function createUserAccount(){
+  const username=document.getElementById('new-user-name').value.trim().toLowerCase();
+  const password=document.getElementById('new-user-pass').value;
+  if(!username||!password){showToast('Remplis pseudo et mot de passe','error-t');return;}
+  if(!/^[a-z0-9_]+$/.test(username)){showToast('Pseudo: lettres, chiffres, _ uniquement','error-t');return;}
+  const accounts=loadAccounts();
+  // Create or update account
+  const ph=hashPass(password);
+  const role='user';
+  accounts[username]={username,passwordHash:ph,role,createdAt:new Date().toISOString(),lastLogin:null};
+  saveAccounts(accounts);
+  // Generate invite code
+  const code=generateInviteCode(username,ph,role);
+  document.getElementById('invite-code-text').value=code;
+  document.getElementById('invite-code-output').style.display='block';
+  renderUsersList();
+  document.getElementById('new-user-name').value='';
+  document.getElementById('new-user-pass').value='';
+  showToast(`✓ Compte "${username}" créé`,'success');
+}
+
+function copyInviteCode(){
+  const txt=document.getElementById('invite-code-text').value;
+  navigator.clipboard.writeText(txt).then(()=>showToast('✓ Code copié !','success')).catch(()=>{
+    document.getElementById('invite-code-text').select();document.execCommand('copy');showToast('✓ Code copié !','success');
+  });
+}
 function renderUsersList(){
   const accounts=loadAccounts();
   const keys=Object.keys(accounts);
@@ -1047,10 +1097,19 @@ function renderUsersList(){
       <div class="user-item-actions">
         ${!isSelf&&!isAcc?`<button class="u-btn promote" onclick="promoteUser('${u}')">↑ ADMIN</button>`:''}
         ${isAcc&&!isSelf?`<button class="u-btn" onclick="demoteUser('${u}')">↓ USER</button>`:''}
+        ${!isSelf?`<button class="u-btn" onclick="regenCode('${u}')" title="Nouveau code d'invitation">🔑</button>`:''}
         ${!isSelf?`<button class="u-btn danger" onclick="deleteUser('${u}')">✕</button>`:''}
       </div>
     </div>`;
   }).join('')||'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:8px;">Aucun compte.</div>';
+}
+function regenCode(u){
+  const accounts=loadAccounts();if(!accounts[u])return;
+  const code=generateInviteCode(u,accounts[u].passwordHash,accounts[u].role);
+  document.getElementById('invite-code-text').value=code;
+  document.getElementById('invite-code-output').style.display='block';
+  document.getElementById('invite-code-output').scrollIntoView({behavior:'smooth'});
+  showToast(`🔑 Code régénéré pour ${u}`,'success');
 }
 function promoteUser(u){
   const accounts=loadAccounts();if(!accounts[u])return;
