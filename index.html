@@ -439,6 +439,12 @@ body.light .stat-val{text-shadow:none;}
     <button class="logout-btn" onclick="doLogout()">DÉCONNECTER</button>
   </div>
 
+  <!-- BANDEAU EMPRUNTS -->
+  <div id="borrow-banner" style="display:none;background:rgba(255,107,53,.1);border:1px solid var(--orange);border-left:4px solid var(--orange);padding:12px 14px;margin-bottom:12px;font-family:var(--mono);font-size:11px;">
+    <div style="color:var(--orange);font-weight:bold;letter-spacing:2px;margin-bottom:6px;">⏱ RAPPEL — TU AS EMPRUNTÉ :</div>
+    <div id="borrow-banner-list" style="display:flex;flex-direction:column;gap:5px;"></div>
+  </div>
+
   <div class="nfc-unsupported" id="nfc-unsupported">⚠ WEB NFC NON SUPPORTÉ — Utilisez Chrome Android.</div>
   <div class="status-bar"><div class="status-dot" id="sd"></div><span id="status-text">Prêt.</span></div>
   <button class="scan-btn" id="scan-btn" onclick="toggleScan()">
@@ -518,7 +524,13 @@ body.light .stat-val{text-shadow:none;}
         <button class="bp" id="sa-lost-btn" style="background:rgba(255,61,90,.1);border:1px solid var(--red);color:var(--red);" onclick="markLostFromScan()">🔴 MARQUER COMME PERDU</button>
       </div>
     </div>
-    <div style="padding:8px 20px 16px;"><div id="sa-borrower-wrap" style="display:none;margin-top:8px;"><label class="fl">PRÊTÉ À</label><input type="text" class="fi" id="sa-borrower" placeholder="Nom…" maxlength="40"/><button class="bp" style="width:100%;" onclick="confirmLentFromScan()">✓ CONFIRMER</button></div></div>
+    <div style="padding:8px 20px 16px;"><div id="sa-borrower-wrap" style="display:none;margin-top:8px;">
+      <label class="fl">PRÊTÉ À — COMPTE LIÉ (optionnel)</label>
+      <select class="cat-select" id="sa-borrower-user" style="margin-bottom:8px;"><option value="">— Aucun compte lié —</option></select>
+      <label class="fl">OU NOM LIBRE</label>
+      <input type="text" class="fi" id="sa-borrower" placeholder="Nom si pas de compte…" maxlength="40"/>
+      <button class="bp" style="width:100%;" onclick="confirmLentFromScan()">✓ CONFIRMER LE PRÊT</button>
+    </div></div>
     <div class="ma" style="padding-top:0;"><button class="bs" style="grid-column:1/-1;" onclick="closeScanAction()">ANNULER</button></div>
   </div>
 </div>
@@ -546,7 +558,12 @@ body.light .stat-val{text-shadow:none;}
         <button class="status-btn" data-val="lent" onclick="selectStatus('lent')">🟡 PRÊTÉ</button>
         <button class="status-btn" data-val="lost" onclick="selectStatus('lost')">🔴 PERDU</button>
       </div>
-      <div id="borrower-field"><label class="fl">PRÊTÉ À</label><input type="text" class="fi" id="borrower-input" placeholder="Nom…" maxlength="40"/></div>
+      <div id="borrower-field">
+        <label class="fl">PRÊTÉ À — COMPTE LIÉ (optionnel)</label>
+        <select class="cat-select" id="borrower-user-select" style="margin-bottom:8px;"><option value="">— Aucun compte lié —</option></select>
+        <label class="fl">OU NOM LIBRE</label>
+        <input type="text" class="fi" id="borrower-input" placeholder="Nom si pas de compte…" maxlength="40"/>
+      </div>
     </div>
     <div class="ms" style="margin-bottom:0"><div class="write-status" id="write-status"></div></div>
     <div class="ma"><button class="bs" onclick="closeModal()">ANNULER</button><button class="bp" id="save-btn" onclick="saveTag()">SAUVEGARDER</button></div>
@@ -757,7 +774,7 @@ function setupListeners(){
 
   tagsRef.on('value',snap=>{
     cachedTags=snap.val()||{};
-    if(fbReady){renderList();updateStats();renderCatTabs();}
+    if(fbReady){renderList();updateStats();renderCatTabs();if(currentUser)checkMyBorrows();}
   });
 
   accountsRef.on('value',snap=>{
@@ -864,6 +881,9 @@ function initApp(){
   initPIN();initPWA();buildEmojiPicker();buildColorPicker();
   renderCatTabs();renderList();updateStats();populateCatSelect();
   updateUserBar();applyRoleUI();checkLentReminders();
+  populateBorrowerSelects();
+  checkMyBorrows(); // rappel d'emprunts pour l'utilisateur connecté
+  setInterval(checkMyBorrows, 24*60*60*1000); // toutes les 24h
   if(!('NDEFReader' in window))document.getElementById('nfc-unsupported').style.display='block';
   const p=new URLSearchParams(window.location.search),uid=p.get('uid');
   if(uid){sessionStorage.setItem('nfc_trusted','1');history.replaceState({},'',window.location.pathname);handleTagFromURL(uid.toUpperCase());}
@@ -1120,15 +1140,69 @@ function openScanActionModal(uid){
 }
 function closeScanAction(){document.getElementById('scan-action-modal').classList.remove('open');scanActionUID=null;}
 function viewDetailsFromScan(){const uid=scanActionUID;closeScanAction();openDetailModal(uid);}
-function openLentFromScan(){document.getElementById('sa-borrower-wrap').style.display='block';setTimeout(()=>document.getElementById('sa-borrower').focus(),100);}
+// ════════════════════════════════════════════════════════════════
+// BORROW REMINDER SYSTEM
+// ════════════════════════════════════════════════════════════════
+function checkMyBorrows(){
+  if(!currentUser)return;
+  const db=loadDB();
+  const myBorrows=Object.values(db).filter(t=>
+    t.status==='lent' && t.borrowerUsername===currentUser.username
+  );
+  const banner=document.getElementById('borrow-banner');
+  const list=document.getElementById('borrow-banner-list');
+  if(myBorrows.length===0){banner.style.display='none';return;}
+  banner.style.display='block';
+  list.innerHTML=myBorrows.map(t=>{
+    const days=Math.floor((Date.now()-new Date(t.updatedAt||t.createdAt))/(864e5));
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,107,53,.2);">
+      <span>${t.emoji||'📦'} <strong style="color:var(--text);">${escHtml(t.name)}</strong></span>
+      <span style="color:var(--orange);">depuis ${days} jour${days>1?'s':''}</span>
+    </div>`;
+  }).join('');
+  // Notification navigateur
+  if('Notification' in window&&Notification.permission==='granted'){
+    myBorrows.forEach(t=>{
+      const days=Math.floor((Date.now()-new Date(t.updatedAt||t.createdAt))/(864e5));
+      new Notification('⏱ Rappel d\'emprunt',{
+        body:`Tu as emprunté "${t.name}" depuis ${days} jour${days>1?'s':''}. Pense à le rendre !`,
+        icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">📦</text></svg>'
+      });
+    });
+  } else if('Notification' in window&&Notification.permission==='default'){
+    Notification.requestPermission();
+  }
+}
+
+function populateBorrowerSelects(){
+  const accounts=loadAccounts();
+  const users=Object.values(accounts).filter(a=>a.username!==currentUser?.username);
+  const opts='<option value="">— Aucun compte lié —</option>'+users.map(u=>`<option value="${escHtml(u.username)}">${escHtml(u.username)} (${u.role==='admin'?'👑':'👤'})</option>`).join('');
+  const s1=document.getElementById('sa-borrower-user');
+  const s2=document.getElementById('borrower-user-select');
+  if(s1)s1.innerHTML=opts;
+  if(s2)s2.innerHTML=opts;
+}
+
+function openLentFromScan(){
+  populateBorrowerSelects();
+  document.getElementById('sa-borrower-wrap').style.display='block';
+  setTimeout(()=>document.getElementById('sa-borrower-user').focus(),100);
+}
 function confirmLentFromScan(){
   if(!isAdmin())return;
   const db=loadDB(),uid=scanActionUID;if(!db[uid])return;
-  const borrower=document.getElementById('sa-borrower').value.trim();
+  const borrowerUser=document.getElementById('sa-borrower-user')?.value||'';
+  const borrowerFree=document.getElementById('sa-borrower').value.trim();
+  const borrower=borrowerUser||borrowerFree;
   const now=new Date().toISOString();
-  db[uid].status='lent';db[uid].borrower=borrower;db[uid].updatedAt=now;
+  db[uid].status='lent';
+  db[uid].borrower=borrowerUser?borrowerUser:borrowerFree;
+  db[uid].borrowerUsername=borrowerUser||null; // lien vers le compte
+  db[uid].updatedAt=now;
   addChangelog(db,uid,'Prêté',borrower?`À ${borrower}`:'Prêt enregistré',now);
-  saveDB(db);closeScanAction();showToast(`🟡 Prêté${borrower?' à '+borrower:''}`, 'success');
+  saveDB(db);closeScanAction();
+  showToast(`🟡 Prêté${borrower?' à '+borrower:''}${borrowerUser?' — rappels activés ✓':''}`, 'success');
 }
 function markLostFromScan(){
   if(!isAdmin())return;
@@ -1178,6 +1252,10 @@ function _openEditModal(uid){
   applyStatusUI(selectedStatus);
   document.querySelectorAll('.emoji-btn').forEach(b=>b.classList.toggle('selected',b.textContent===selectedEmoji));
   populateCatSelect(tag.category);
+  populateBorrowerSelects();
+  // Pre-select existing borrowerUsername
+  const bus=document.getElementById('borrower-user-select');
+  if(bus&&tag.borrowerUsername)bus.value=tag.borrowerUsername;
   if(currentPhoto){const p=document.getElementById('photo-preview');p.src=currentPhoto;p.style.display='block';document.getElementById('photo-label').style.display='none';document.getElementById('photo-remove').style.display='block';}
   else resetPhotoUI();
   document.getElementById('save-btn').disabled=false;
@@ -1193,7 +1271,10 @@ async function saveTag(){
   const uid=currentUID,isEdit=!!editUID,db=loadDB();
   const catId=document.getElementById('cat-select').value;
   const notes=document.getElementById('tag-notes').value.trim();
-  const borrower=selectedStatus==='lent'?document.getElementById('borrower-input').value.trim():'';
+  const borrowerUserSel=document.getElementById('borrower-user-select')?.value||'';
+  const borrowerFreeText=document.getElementById('borrower-input').value.trim();
+  const borrower=selectedStatus==='lent'?(borrowerUserSel||borrowerFreeText):'';
+  const borrowerUsername=selectedStatus==='lent'?(borrowerUserSel||null):null;
   const now=new Date().toISOString();
   if(isEdit){
     const old=db[uid],changes=[];
@@ -1201,9 +1282,9 @@ async function saveTag(){
     if(old.status!==selectedStatus)changes.push(`Statut→${SL[selectedStatus]}`);
     if(selectedStatus==='lent'&&borrower)changes.push(`Prêté à: ${borrower}`);
     addChangelog(db,uid,'Modification',changes.join(' | ')||'Mise à jour',now);
-    Object.assign(db[uid],{name,emoji:selectedEmoji,category:catId,notes,photo:currentPhoto,status:selectedStatus,borrower,updatedAt:now});
+    Object.assign(db[uid],{name,emoji:selectedEmoji,category:catId,notes,photo:currentPhoto,status:selectedStatus,borrower,borrowerUsername:borrowerUsername||null,updatedAt:now});
   }else{
-    db[uid]={name,emoji:selectedEmoji,uid,category:catId,notes,photo:currentPhoto,status:selectedStatus,borrower,
+    db[uid]={name,emoji:selectedEmoji,uid,category:catId,notes,photo:currentPhoto,status:selectedStatus,borrower,borrowerUsername:borrowerUsername||null,
       createdAt:now,lastSeen:now,scanCount:1,written:false,pinned:false,archived:false,sharedWith:[],
       changelog:[{action:'Création',detail:name,date:now,by:currentUser.username}]};
   }
