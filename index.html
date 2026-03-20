@@ -1698,9 +1698,18 @@ function applyStatusUI(v){document.querySelectorAll('.status-btn').forEach(b=>b.
 function hashPIN(p){let h=0;for(let i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0;}return h.toString(36);}
 function getSavedPIN(){return localStorage.getItem(PIN_KEY);}
 function initPIN(){updateLockBtn();}
-function updateLockBtn(){const btn=document.getElementById('lock-btn');if(!btn)return;const ps=!!getSavedPIN();btn.textContent=ps?'🔒':'🔓';}
-function lockApp(){if(confirm('Changer le PIN ?\nOK = Changer | Annuler = Supprimer')){startChangePIN();}else if(confirm('Supprimer le PIN ?')){localStorage.removeItem(PIN_KEY);updateLockBtn();showToast('PIN supprimé','');}}
-function requirePIN(cb){if(sessionStorage.getItem('nfc_trusted')==='1'){if(cb)cb();return;}const s=getSavedPIN();if(!s)startSetPIN(cb);else openPINVerify(cb);}
+function updateLockBtn(){const btn=document.getElementById('lock-btn');if(!btn)return;const ps=!!getSavedPIN();btn.textContent=ps?'🔒':'🔓';btn.title=ps?'PIN actif':'Aucun PIN — cliquer pour en créer un';}
+function lockApp(){
+  const hasPIN=!!getSavedPIN();
+  if(!hasPIN){if(confirm('Créer un code PIN pour sécuriser les actions admin ?'))startChangePIN();}
+  else{if(confirm('OK = Changer le PIN | Annuler = Supprimer'))startChangePIN();else if(confirm('Supprimer le PIN définitivement ?')){localStorage.removeItem(PIN_KEY);updateLockBtn();showToast('PIN supprimé','');}}
+}
+function requirePIN(cb){
+  if(sessionStorage.getItem('nfc_trusted')==='1'){if(cb)cb();return;}
+  const s=getSavedPIN();
+  if(!s){if(cb)cb();return;} // Pas de PIN défini → action directe
+  else openPINVerify(cb);
+}
 function openPINVerify(cb){pinMode='verify';pinCallback=cb;pinBuffer='';document.getElementById('pin-icon').textContent='🔒';document.getElementById('pin-title').textContent='CODE PIN';document.getElementById('pin-subtitle').textContent='ENTREZ VOTRE PIN';document.getElementById('pin-cancel-btn').style.display='inline-block';document.getElementById('pin-change-btn').style.display='inline-block';document.getElementById('pin-error').textContent='';updatePINDots('');document.getElementById('pin-overlay').classList.add('open');}
 function startSetPIN(cb){pinMode='set';pinStep=0;pinFirstEntry='';pinBuffer='';pinCallback=cb;document.getElementById('pin-icon').textContent='🔐';document.getElementById('pin-title').textContent='CRÉER UN PIN';document.getElementById('pin-subtitle').textContent='CODE À 4 CHIFFRES';document.getElementById('pin-cancel-btn').style.display='inline-block';document.getElementById('pin-change-btn').style.display='none';document.getElementById('pin-error').textContent='';updatePINDots('');document.getElementById('pin-overlay').classList.add('open');}
 function startChangePIN(){closePIN();setTimeout(()=>startSetPIN(null),100);}
