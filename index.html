@@ -1718,8 +1718,28 @@ function pinKey(d){if(pinBuffer.length>=4)return;pinBuffer+=d;updatePINDots(pinB
 function pinDel(){if(!pinBuffer.length)return;pinBuffer=pinBuffer.slice(0,-1);updatePINDots(pinBuffer);document.getElementById('pin-error').textContent='';}
 function updatePINDots(buf){for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);d.className='pin-dot'+(i<buf.length?' filled':'');}}
 function processPIN(){
-  if(pinMode==='verify'){if(hashPIN(pinBuffer)===getSavedPIN()){dotsSuccess();setTimeout(()=>{closePIN();if(pinCallback)pinCallback();},300);}else{dotsError();document.getElementById('pin-error').textContent='PIN INCORRECT';pinBuffer='';setTimeout(()=>updatePINDots(''),500);}}
-  else if(pinMode==='set'){if(pinStep===0){pinFirstEntry=pinBuffer;pinBuffer='';pinStep=1;document.getElementById('pin-subtitle').textContent='CONFIRMEZ VOTRE PIN';document.getElementById('pin-error').textContent='';updatePINDots('');}else{if(pinBuffer===pinFirstEntry){localStorage.setItem(PIN_KEY,hashPIN(pinBuffer));updateLockBtn();dotsSuccess();setTimeout(()=>{closePIN();showToast('✓ PIN défini','success');if(pinCallback)pinCallback();},400);}else{dotsError();document.getElementById('pin-error').textContent='PINS DIFFÉRENTS';pinBuffer='';pinStep=0;pinFirstEntry='';document.getElementById('pin-subtitle').textContent='RÉESSAYEZ';setTimeout(()=>updatePINDots(''),500);}}}
+  if(pinMode==='verify'){
+    if(hashPIN(pinBuffer)===getSavedPIN()){
+      dotsSuccess();
+      setTimeout(()=>{const cb=pinCallback;closePIN();if(cb)cb();},300);
+    }else{dotsError();document.getElementById('pin-error').textContent='PIN INCORRECT';pinBuffer='';setTimeout(()=>updatePINDots(''),500);}
+  }else if(pinMode==='set'){
+    if(pinStep===0){
+      pinFirstEntry=pinBuffer;pinBuffer='';pinStep=1;
+      document.getElementById('pin-subtitle').textContent='CONFIRMEZ VOTRE PIN';
+      document.getElementById('pin-error').textContent='';updatePINDots('');
+    }else{
+      if(pinBuffer===pinFirstEntry){
+        localStorage.setItem(PIN_KEY,hashPIN(pinBuffer));updateLockBtn();dotsSuccess();
+        setTimeout(()=>{const cb=pinCallback;closePIN();showToast('✓ PIN défini','success');if(cb)cb();},400);
+      }else{
+        dotsError();document.getElementById('pin-error').textContent='PINS DIFFÉRENTS';
+        pinBuffer='';pinStep=0;pinFirstEntry='';
+        document.getElementById('pin-subtitle').textContent='RÉESSAYEZ';
+        setTimeout(()=>updatePINDots(''),500);
+      }
+    }
+  }
 }
 function dotsError(){for(let i=0;i<4;i++)document.getElementById('pd'+i).className='pin-dot error';}
 function dotsSuccess(){for(let i=0;i<4;i++)document.getElementById('pd'+i).className='pin-dot success';}
