@@ -366,6 +366,24 @@ body.light .stat-val{text-shadow:none;}
   </div>
 </div>
 
+<!-- MODAL ACTION SCAN (tag dispo) -->
+<div class="modal-overlay" id="scan-action-modal">
+  <div class="modal" style="border-color:var(--green);">
+    <div class="mh"><div class="mb" style="color:var(--green)">TAG SCANNÉ</div><h2 id="sa-title" style="font-size:18px;color:var(--green);margin-bottom:4px;"></h2><div class="muid" id="sa-uid" style="margin-bottom:14px;"></div></div>
+    <div style="padding:0 20px 8px;">
+      <div class="detail-banner available" style="margin-bottom:16px;">🟢 DISPONIBLE</div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:10px;">QUE VEUX-TU FAIRE ?</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button class="bp" style="background:transparent;border:1px solid var(--green);color:var(--green);letter-spacing:2px;" onclick="closeScanAction();openDetailModal(scanActionUID)">👁 VOIR LES DÉTAILS</button>
+        <button class="bp" style="background:rgba(255,107,53,.1);border:1px solid var(--orange);color:var(--orange);letter-spacing:2px;" onclick="openLentFromScan()">🟡 MARQUER COMME PRÊTÉ</button>
+        <button class="bp" style="background:rgba(255,61,90,.1);border:1px solid var(--red);color:var(--red);letter-spacing:2px;" onclick="markLostFromScan()">🔴 MARQUER COMME PERDU</button>
+      </div>
+    </div>
+    <div style="padding:8px 20px 16px;"><div id="sa-borrower-wrap" style="display:none;margin-top:8px;"><label class="fl">PRÊTÉ À</label><input type="text" class="fi" id="sa-borrower" placeholder="Nom de la personne…" maxlength="40"/><button class="bp" style="width:100%;" onclick="confirmLentFromScan()">✓ CONFIRMER LE PRÊT</button></div></div>
+    <div class="ma" style="padding-top:0;"><button class="bs" style="grid-column:1/-1;" onclick="closeScanAction()">ANNULER</button></div>
+  </div>
+</div>
+
 <!-- MODAL RETOUR -->
 <div class="modal-overlay" id="return-modal">
   <div class="modal" style="border-color:var(--orange);">
@@ -482,6 +500,7 @@ const saveHistory=h=>localStorage.setItem(HISTORY_KEY,JSON.stringify(h));
 const loadSettings=()=>{try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||{unseenDays:30,lentDays:7,webhook:''};}catch{return{unseenDays:30,lentDays:7,webhook:''};}};
 const saveSettingsData=s=>localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));
 let isScanning=false,nfcReader=null;
+let scanActionUID=null;
 let currentUID=null,editUID=null,pendingWriteUID=null,detailUID=null,currentQRUID=null;
 let selectedEmoji='📦',selectedStatus='available',selectedColor=CAT_COLORS[0];
 let currentPhoto=null,activeCatFilter='all',activeSF='all',isGridView=false;
@@ -512,7 +531,7 @@ function handleTagFromURL(uid){
     saveDB(db);renderList();addToHistory(uid,db[uid]);pingWebhook(db[uid]);
     const s=db[uid].status||'available';
     if(s==='lent'||s==='lost'){setStatus('active',`⚠ Tag ${s==='lent'?'prêté':'perdu'} : ${db[uid].name}`);openReturnModal(uid);}
-    else{setStatus('active',`✓ Tag reconnu : ${db[uid].name}`);openDetailModal(uid);}
+    else{setStatus('active',`✓ Tag reconnu : ${db[uid].name}`);openScanActionModal(uid);}
   }else{setStatus('active',`◈ Nouveau tag : ${uid}`);openRegisterModal(uid,false,false);}
 }
 
@@ -536,7 +555,7 @@ function handleTagScan(uid){
     saveDB(db);renderList();addToHistory(uid,db[uid]);pingWebhook(db[uid]);
     const s=db[uid].status||'available';
     if(s==='lent'||s==='lost'){setStatus('active',`⚠ ${s==='lent'?'Prêté':'Perdu'} : ${db[uid].name}`);openReturnModal(uid);}
-    else{setStatus('active',`✓ ${db[uid].name}`);openDetailModal(uid);}
+    else{setStatus('active',`✓ ${db[uid].name}`);openScanActionModal(uid);}
   }else{setStatus('active',`◈ Nouveau tag : ${uid}`);pendingWriteUID=uid;openRegisterModal(uid,false,true);}
 }
 
@@ -622,6 +641,40 @@ async function saveTag(){
       setTimeout(()=>{closeModal();showToast('Tag enregistré (écriture NFC échouée)','');highlightCard(uid);},2000);
     }
   }else{saveDB(db);renderList();updateStats();renderCatTabs();closeModal();showToast(isEdit?'✓ Tag modifié':'✓ Tag enregistré','success');highlightCard(uid);}
+}
+
+function openScanActionModal(uid){
+  const db=loadDB(),tag=db[uid];if(!tag)return;
+  scanActionUID=uid;
+  document.getElementById('sa-title').textContent=(tag.emoji||'📦')+' '+tag.name;
+  document.getElementById('sa-uid').textContent='UID : '+uid;
+  document.getElementById('sa-borrower-wrap').style.display='none';
+  document.getElementById('sa-borrower').value='';
+  document.getElementById('scan-action-modal').classList.add('open');
+}
+function closeScanAction(){document.getElementById('scan-action-modal').classList.remove('open');scanActionUID=null;}
+function openLentFromScan(){document.getElementById('sa-borrower-wrap').style.display='block';setTimeout(()=>document.getElementById('sa-borrower').focus(),100);}
+function confirmLentFromScan(){
+  const db=loadDB(),uid=scanActionUID;if(!db[uid])return;
+  const borrower=document.getElementById('sa-borrower').value.trim();
+  const now=new Date().toISOString();
+  db[uid].status='lent';db[uid].borrower=borrower;db[uid].updatedAt=now;
+  if(!db[uid].changelog)db[uid].changelog=[];
+  db[uid].changelog.unshift({action:'Prêté',detail:borrower?`Prêté à ${borrower}`:'Prêt enregistré',date:now});
+  if(db[uid].changelog.length>20)db[uid].changelog.splice(20);
+  saveDB(db);renderList();updateStats();closeScanAction();
+  showToast(`🟡 Marqué comme prêté${borrower?' à '+borrower:''}`, 'success');highlightCard(uid);
+}
+function markLostFromScan(){
+  const db=loadDB(),uid=scanActionUID;if(!db[uid])return;
+  if(!confirm(`Marquer "${db[uid].name}" comme perdu ?`))return;
+  const now=new Date().toISOString();
+  db[uid].status='lost';db[uid].borrower='';db[uid].updatedAt=now;
+  if(!db[uid].changelog)db[uid].changelog=[];
+  db[uid].changelog.unshift({action:'Perdu',detail:'Marqué comme perdu',date:now});
+  if(db[uid].changelog.length>20)db[uid].changelog.splice(20);
+  saveDB(db);renderList();updateStats();closeScanAction();
+  showToast('🔴 Marqué comme perdu','error-t');highlightCard(uid);
 }
 
 function openDetailModal(uid){
@@ -950,7 +1003,7 @@ function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(
 function genUID(){return Array.from({length:7},()=>Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()).join(':');}
 function buildEmojiPicker(){const row=document.getElementById('emoji-row');EMOJIS.forEach(e=>{const b=document.createElement('button');b.className='emoji-btn';b.textContent=e;b.onclick=()=>{selectedEmoji=e;document.querySelectorAll('.emoji-btn').forEach(x=>x.classList.toggle('selected',x.textContent===e));};row.appendChild(b);});}
 
-['register-modal','detail-modal','return-modal','history-modal','qr-modal','cat-modal','settings-modal','summary-modal'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById(id).classList.remove('open');});});
+['register-modal','detail-modal','return-modal','history-modal','qr-modal','cat-modal','settings-modal','summary-modal','scan-action-modal'].forEach(id=>{document.getElementById(id).addEventListener('click',e=>{if(e.target===e.currentTarget)document.getElementById(id).classList.remove('open');});});
 </script>
 </body>
 </html>
