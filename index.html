@@ -181,7 +181,7 @@ body.light .stat-val{text-shadow:none;}
 .btn-icon.star-on{border-color:var(--yellow);color:var(--yellow);}
 .btn-more{width:30px;height:30px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;letter-spacing:-2px;transition:all .2s;flex-shrink:0;}
 .btn-more:hover{border-color:var(--cyan);color:var(--cyan);}
-.tag-dropdown{position:absolute;top:100%;right:0;background:var(--surface2);border:1px solid var(--cyan);z-index:500;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.5);display:none;flex-direction:column;}
+.tag-dropdown{position:fixed;background:var(--surface2);border:1px solid var(--cyan);z-index:2000;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.7);display:none;flex-direction:column;}
 .tag-dropdown.open{display:flex;}
 .dd-item{display:flex;align-items:center;gap:9px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--text);cursor:pointer;border:none;background:transparent;width:100%;text-align:left;transition:background .15s;white-space:nowrap;}
 .dd-item:hover{background:rgba(0,229,255,.1);color:var(--cyan);}
@@ -200,6 +200,15 @@ body.light .stat-val{text-shadow:none;}
 .badge-arch{border-color:var(--muted);color:var(--muted);}
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:2px;border:1px dashed var(--border);}
 .empty-icon{font-size:32px;margin-bottom:12px;opacity:.4;}
+
+.bio-user-btn{width:100%;padding:11px 14px;background:transparent;border:1px solid var(--green);color:var(--text);font-family:var(--mono);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .2s;text-align:left;}
+.bio-user-btn:hover{background:rgba(0,255,140,.08);border-color:var(--green);}
+.bio-user-btn .bio-avatar{width:30px;height:30px;border-radius:50%;background:var(--green);color:var(--bg);font-weight:bold;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.bio-user-btn .bio-avatar.admin-av{background:var(--cyan);}
+.bio-user-btn .bio-info{flex:1;}
+.bio-user-btn .bio-name{font-size:13px;color:var(--text);}
+.bio-user-btn .bio-hint{font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:1px;}
+.bio-user-btn .bio-finger{font-size:20px;margin-left:auto;}
 
 .login-divider{display:flex;align-items:center;gap:10px;margin:14px 0;font-family:var(--mono);font-size:9px;color:var(--muted);}
 .login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border);}
@@ -390,6 +399,12 @@ body.light .stat-val{text-shadow:none;}
       <button class="login-tab" id="tab-register" onclick="switchLoginTab('register')">CRÉER UN COMPTE</button>
     </div>
     <div class="login-panel">
+      <!-- BIOMETRIC AUTO-PROMPT -->
+      <div id="bio-auto-section" style="display:none;margin-bottom:0;">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:10px;">CONNEXION RAPIDE</div>
+        <div id="bio-auto-list" style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;"></div>
+        <div class="login-divider">OU PAR MOT DE PASSE</div>
+      </div>
       <!-- LOGIN -->
       <div id="panel-login">
         <div class="login-field">
@@ -788,6 +803,26 @@ function showLoginScreen(){
   const accounts=loadAccounts();
   if(Object.keys(accounts).length===0) document.getElementById('first-admin-notice').style.display='block';
   else document.getElementById('first-admin-notice').style.display='none';
+  initBioAutoSection();
+}
+
+function initBioAutoSection(){
+  if(!BIOMETRIC_SUPPORTED())return;
+  const accounts=loadAccounts();
+  const bioUsers=Object.values(accounts).filter(a=>a.biometricCredId);
+  const section=document.getElementById('bio-auto-section');
+  const list=document.getElementById('bio-auto-list');
+  if(bioUsers.length===0){section.style.display='none';return;}
+  section.style.display='block';
+  list.innerHTML=bioUsers.map(u=>`
+    <button class="bio-user-btn" onclick="loginWithBiometricDirect('${escHtml(u.username)}')">
+      <div class="bio-avatar ${u.role==='admin'?'admin-av':''}">${u.username[0].toUpperCase()}</div>
+      <div class="bio-info">
+        <div class="bio-name">${escHtml(u.username)}</div>
+        <div class="bio-hint">${u.role==='admin'?'👑 ADMIN':'👤 USER'} · Appuie pour scanner l'empreinte</div>
+      </div>
+      <span class="bio-finger">👆</span>
+    </button>`).join('');
 }
 
 function switchLoginTab(tab){
@@ -886,6 +921,33 @@ async function registerBiometric(){
     else showToast('Erreur : '+e.message,'error-t');
   }
   btn.disabled=false;
+}
+
+async function loginWithBiometricDirect(username){
+  const accounts=loadAccounts();
+  const acc=accounts[username];
+  if(!acc?.biometricCredId)return;
+  // Animate the button
+  const btns=document.querySelectorAll('.bio-user-btn');
+  btns.forEach(b=>{if(b.onclick.toString().includes(username))b.style.borderColor='var(--cyan)';});
+  try{
+    const credId=Uint8Array.from(atob(acc.biometricCredId),c=>c.charCodeAt(0));
+    const challenge=crypto.getRandomValues(new Uint8Array(32));
+    await navigator.credentials.get({publicKey:{
+      challenge,
+      allowCredentials:[{id:credId,type:'public-key'}],
+      userVerification:'required',
+      timeout:60000
+    }});
+    acc.lastLogin=new Date().toISOString();saveAccounts(accounts);
+    currentUser={username,role:acc.role};
+    sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
+    document.getElementById('login-screen').classList.add('hidden');
+    initApp();
+    showToast('👆 Connexion par empreinte','success');
+  }catch(e){
+    document.getElementById('login-error').textContent=e.name==='NotAllowedError'?'Empreinte non reconnue.':'Erreur biométrique.';
+  }
 }
 
 async function loginWithBiometric(){
@@ -1387,7 +1449,7 @@ function renderList(filter=''){
     const cardClick=(t.status||'available')==='available'?`onclick="openScanActionModal('${uid}')" style="cursor:pointer"`:'';
     // Admin-only action buttons
     const adminBtns=isAdmin()?`
-      <button class="btn-more" title="Actions" onclick="event.stopPropagation();toggleDropdown('dd-${uid}')">···</button>
+      <button class="btn-more" title="Actions" onclick="event.stopPropagation();toggleDropdown('dd-${uid}',this)">···</button>
       <div class="tag-dropdown" id="dd-${uid}">
         <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openDetailModal('${uid}')">👁&nbsp; Voir les détails</button>
         <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openScanActionModal('${uid}')">⚡&nbsp; Action rapide</button>
@@ -1617,12 +1679,22 @@ function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function genUID(){return Array.from({length:7},()=>Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()).join(':');}
 function buildEmojiPicker(){const row=document.getElementById('emoji-row');EMOJIS.forEach(e=>{const b=document.createElement('button');b.className='emoji-btn';b.textContent=e;b.onclick=()=>{selectedEmoji=e;document.querySelectorAll('.emoji-btn').forEach(x=>x.classList.toggle('selected',x.textContent===e));};row.appendChild(b);});}
 
-function toggleDropdown(id){
+function toggleDropdown(id,btnEl){
   const dd=document.getElementById(id);
   if(!dd)return;
   const isOpen=dd.classList.contains('open');
   closeAllDropdowns();
-  if(!isOpen)dd.classList.add('open');
+  if(!isOpen){
+    dd.classList.add('open');
+    // Position relative to button
+    const rect=btnEl.getBoundingClientRect();
+    const ddH=280; // estimated height
+    const spaceBelow=window.innerHeight-rect.bottom;
+    const top=spaceBelow>ddH ? rect.bottom+2 : rect.top-ddH-2;
+    dd.style.top=Math.max(4,top)+'px';
+    dd.style.right=(window.innerWidth-rect.right)+'px';
+    dd.style.left='auto';
+  }
 }
 function closeAllDropdowns(){document.querySelectorAll('.tag-dropdown.open').forEach(d=>d.classList.remove('open'));}
 document.addEventListener('click',()=>closeAllDropdowns());
