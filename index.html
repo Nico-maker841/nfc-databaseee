@@ -173,11 +173,20 @@ body.light .stat-val{text-shadow:none;}
 .tag-uid{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:1px;}
 .tag-meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:3px;align-items:center;}
 .lent-days{color:var(--orange);}.unseen-alert{color:var(--red);}
-.tag-actions{display:flex;gap:3px;flex-shrink:0;}
-.btn-icon{width:25px;height:25px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all .2s;flex-shrink:0;}
+/* ── TAG ACTION DROPDOWN ── */
+.tag-actions{display:flex;gap:3px;flex-shrink:0;position:relative;}
+.btn-icon{width:30px;height:30px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .2s;flex-shrink:0;}
 .btn-icon:hover{border-color:var(--cyan);color:var(--cyan);}
 .btn-icon.delete:hover{border-color:var(--red);color:var(--red);}
 .btn-icon.star-on{border-color:var(--yellow);color:var(--yellow);}
+.btn-more{width:30px;height:30px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;letter-spacing:-2px;transition:all .2s;flex-shrink:0;}
+.btn-more:hover{border-color:var(--cyan);color:var(--cyan);}
+.tag-dropdown{position:absolute;top:100%;right:0;background:var(--surface2);border:1px solid var(--cyan);z-index:500;min-width:170px;box-shadow:0 8px 24px rgba(0,0,0,.5);display:none;flex-direction:column;}
+.tag-dropdown.open{display:flex;}
+.dd-item{display:flex;align-items:center;gap:9px;padding:10px 14px;font-family:var(--mono);font-size:11px;color:var(--text);cursor:pointer;border:none;background:transparent;width:100%;text-align:left;transition:background .15s;white-space:nowrap;}
+.dd-item:hover{background:rgba(0,229,255,.1);color:var(--cyan);}
+.dd-item.danger:hover{background:rgba(255,61,90,.1);color:var(--red);}
+.dd-sep{height:1px;background:var(--border);margin:2px 0;}
 
 /* ── BADGES ── */
 .badge{display:inline-block;font-family:var(--mono);font-size:8px;letter-spacing:1px;padding:1px 5px;border:1px solid;vertical-align:middle;flex-shrink:0;}
@@ -456,17 +465,21 @@ body.light .stat-val{text-shadow:none;}
   </div>
 
   <!-- TOOLBAR ADMIN -->
-  <div class="toolbar" id="toolbar-admin">
-    <button class="tool-btn install-btn" id="install-btn" onclick="installPWA()">📲</button>
-    <button class="tool-btn" onclick="openHistoryModal()">📋 HISTORIQUE</button>
-    <button class="tool-btn" onclick="openSummaryModal()">📊 RÉSUMÉ</button>
-    <button class="tool-btn admin-only" onclick="requirePIN(()=>exportData())">⬆ EXPORT</button>
-    <button class="tool-btn admin-only" onclick="requirePIN(()=>document.getElementById('import-input').click())">⬇ IMPORT</button>
+  <div id="toolbar-admin">
+    <div class="toolbar" style="margin-bottom:5px;">
+      <button class="tool-btn" onclick="openHistoryModal()">📋 HISTORIQUE</button>
+      <button class="tool-btn" onclick="openSummaryModal()">📊 RÉSUMÉ</button>
+      <button class="tool-btn" onclick="requirePIN(openUsersModal)" style="border-color:var(--yellow);color:var(--yellow);">👥 COMPTES</button>
+      <button class="tool-btn sq" id="theme-btn" onclick="toggleTheme()">🌙</button>
+      <button class="tool-btn sq" id="lock-btn" onclick="requirePIN(lockApp)">🔓</button>
+    </div>
+    <div class="toolbar">
+      <button class="tool-btn install-btn" id="install-btn" onclick="installPWA()">📲 INSTALLER</button>
+      <button class="tool-btn" onclick="requirePIN(()=>exportData())">⬆ EXPORTER</button>
+      <button class="tool-btn" onclick="requirePIN(()=>document.getElementById('import-input').click())">⬇ IMPORTER</button>
+      <button class="tool-btn" onclick="requirePIN(openSettingsModal)">⚙ RÉGLAGES</button>
+    </div>
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
-    <button class="tool-btn admin-only" onclick="requirePIN(openSettingsModal)">⚙ RÉGLAGES</button>
-    <button class="tool-btn admin-only" onclick="requirePIN(openUsersModal)" style="border-color:var(--yellow);color:var(--yellow);">👥 COMPTES</button>
-    <button class="tool-btn sq" id="theme-btn" onclick="toggleTheme()">🌙</button>
-    <button class="tool-btn sq" id="lock-btn" onclick="requirePIN(lockApp)">🔓</button>
   </div>
 
   <!-- TOOLBAR USER (limité) -->
@@ -938,7 +951,7 @@ function updateUserBar(){
 
 function applyRoleUI(){
   const admin=isAdmin();
-  document.getElementById('toolbar-admin').style.display=admin?'flex':'none';
+  document.getElementById('toolbar-admin').style.display=admin?'block':'none';
   document.getElementById('toolbar-user').style.display=admin?'none':'flex';
   document.getElementById('locked-msg').style.display=admin?'none':'block';
   document.getElementById('cat-manage-btn').style.display=admin?'flex':'none';
@@ -1374,11 +1387,21 @@ function renderList(filter=''){
     const cardClick=(t.status||'available')==='available'?`onclick="openScanActionModal('${uid}')" style="cursor:pointer"`:'';
     // Admin-only action buttons
     const adminBtns=isAdmin()?`
-      <button class="btn-icon${t.pinned?' star-on':''}" title="Favori" onclick="event.stopPropagation();togglePin('${uid}')">⭐</button>
-      <button class="btn-icon" title="Partager avec…" onclick="event.stopPropagation();openShareModal('${uid}')">👥</button>
-      <button class="btn-icon" title="Modifier" onclick="event.stopPropagation();openEditModal('${uid}')">✏️</button>
-      <button class="btn-icon" title="${t.archived?'Désarchiver':'Archiver'}" onclick="event.stopPropagation();toggleArchive('${uid}')">📦</button>
-      <button class="btn-icon delete" title="Supprimer" onclick="event.stopPropagation();deleteTag('${uid}')">🗑</button>`:'';
+      <button class="btn-more" title="Actions" onclick="event.stopPropagation();toggleDropdown('dd-${uid}')">···</button>
+      <div class="tag-dropdown" id="dd-${uid}">
+        <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openDetailModal('${uid}')">👁&nbsp; Voir les détails</button>
+        <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openScanActionModal('${uid}')">⚡&nbsp; Action rapide</button>
+        <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openQRModal('${uid}')">⬛&nbsp; QR Code</button>
+        <div class="dd-sep"></div>
+        <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openEditModal('${uid}')">✏️&nbsp; Modifier</button>
+        <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openShareModal('${uid}')">👥&nbsp; Partager avec…</button>
+        <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();togglePin('${uid}')">⭐&nbsp; ${t.pinned?'Retirer des favoris':'Ajouter aux favoris'}</button>
+        <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();toggleArchive('${uid}')">📦&nbsp; ${t.archived?'Désarchiver':'Archiver'}</button>
+        <div class="dd-sep"></div>
+        <button class="dd-item danger" onclick="event.stopPropagation();closeAllDropdowns();deleteTag('${uid}')">🗑&nbsp; Supprimer</button>
+      </div>`:
+      `<button class="btn-icon" title="Voir" onclick="event.stopPropagation();openDetailModal('${uid}')">👁</button>
+       <button class="btn-icon" title="QR" onclick="event.stopPropagation();openQRModal('${uid}')">⬛</button>`;
     return `<div class="${cc}" data-uid="${uid}" data-status="${t.status||'available'}" ${cardClick}>
       ${cat&&cat.bgImage?`<div class="tag-card-bg" ${bgStyle}></div>`:''}
       ${imgEl}
@@ -1388,9 +1411,10 @@ function renderList(filter=''){
         <div class="tag-meta">${cb}${wb}${ls}${us}</div>
       </div>
       <div class="tag-actions">
-        <button class="btn-icon" title="Voir" onclick="event.stopPropagation();openDetailModal('${uid}')">👁</button>
-        <button class="btn-icon" title="QR" onclick="event.stopPropagation();openQRModal('${uid}')">⬛</button>
-        ${adminBtns}
+        ${isAdmin() ? adminBtns : `
+          <button class="btn-icon" title="Voir" onclick="event.stopPropagation();openDetailModal('${uid}')">👁</button>
+          <button class="btn-icon" title="QR" onclick="event.stopPropagation();openQRModal('${uid}')">⬛</button>
+        `}
       </div>
     </div>`;
   }).join('');
@@ -1592,6 +1616,16 @@ function formatDate(iso){if(!iso)return'—';const d=new Date(iso);return d.toLo
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function genUID(){return Array.from({length:7},()=>Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()).join(':');}
 function buildEmojiPicker(){const row=document.getElementById('emoji-row');EMOJIS.forEach(e=>{const b=document.createElement('button');b.className='emoji-btn';b.textContent=e;b.onclick=()=>{selectedEmoji=e;document.querySelectorAll('.emoji-btn').forEach(x=>x.classList.toggle('selected',x.textContent===e));};row.appendChild(b);});}
+
+function toggleDropdown(id){
+  const dd=document.getElementById(id);
+  if(!dd)return;
+  const isOpen=dd.classList.contains('open');
+  closeAllDropdowns();
+  if(!isOpen)dd.classList.add('open');
+}
+function closeAllDropdowns(){document.querySelectorAll('.tag-dropdown.open').forEach(d=>d.classList.remove('open'));}
+document.addEventListener('click',()=>closeAllDropdowns());
 
 ['scan-action-modal','register-modal','detail-modal','return-modal','history-modal','qr-modal','cat-modal','settings-modal','summary-modal','users-modal','share-modal'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('click',e=>{if(e.target===e.currentTarget)el.classList.remove('open');});
