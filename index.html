@@ -11,6 +11,8 @@
 <link id="manifest-link" rel="manifest">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 :root{--bg:#060b10;--surface:#0d1821;--surface2:#0f2030;--border:#1a3a55;--cyan:#00e5ff;--cyan2:#00b8d4;--green:#00ff8c;--orange:#ff6b35;--red:#ff3d5a;--yellow:#fbbf24;--text:#c8e6ff;--muted:#4a7090;--mono:'Share Tech Mono',monospace;--ui:'Exo 2',sans-serif;}
 body.light{--bg:#f0f4f8;--surface:#fff;--surface2:#e8eef5;--border:#c5d5e8;--cyan:#0077aa;--cyan2:#005f8a;--green:#0a7c4e;--orange:#c05300;--red:#c0002e;--text:#0d2035;--muted:#6688aa;}
@@ -23,30 +25,47 @@ body.light::before{background:repeating-linear-gradient(0deg,transparent,transpa
 body.light::after{background-image:linear-gradient(rgba(0,119,170,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,119,170,.05) 1px,transparent 1px);background-size:40px 40px;}
 .container{position:relative;z-index:1;max-width:680px;margin:0 auto;padding:20px 16px 100px;}
 
-/* ── LOGIN SCREEN ── */
+/* ── LOADING ── */
+#loading-screen{position:fixed;inset:0;background:var(--bg);z-index:5000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
+#loading-screen.hidden{display:none;}
+.loading-logo{font-family:var(--mono);font-size:28px;color:var(--cyan);letter-spacing:2px;text-shadow:0 0 30px rgba(0,229,255,.5);}
+.loading-logo span{color:var(--green);}
+.loading-bar-wrap{width:200px;height:2px;background:var(--border);}
+.loading-bar{height:100%;background:var(--cyan);animation:loadBar 1.5s ease-in-out infinite;}
+@keyframes loadBar{0%{width:0}50%{width:100%}100%{width:0}}
+.loading-text{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:3px;}
+
+/* ── LOGIN ── */
 #login-screen{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;}
 #login-screen.hidden{display:none;}
 .login-box{width:100%;max-width:360px;animation:modalIn .3s ease;}
-.login-logo{text-align:center;margin-bottom:28px;}
+.login-logo{text-align:center;margin-bottom:24px;}
 .login-logo .logo-badge{display:inline-block;background:var(--cyan);color:var(--bg);font-family:var(--mono);font-size:10px;font-weight:bold;letter-spacing:4px;padding:4px 12px;margin-bottom:10px;}
 .login-logo h1{font-family:var(--mono);font-size:28px;color:var(--cyan);letter-spacing:2px;text-shadow:0 0 30px rgba(0,229,255,.5);}
 .login-logo h1 span{color:var(--green);}
 body.light .login-logo h1,body.light .login-logo h1 span{text-shadow:none;}
-.login-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:0;border:1px solid var(--border);border-bottom:none;}
-.login-tab{padding:10px;background:transparent;border:none;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:3px;cursor:pointer;transition:all .2s;}
+.login-tabs{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border);border-bottom:none;}
+.login-tab{padding:10px;background:transparent;border:none;color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:2px;cursor:pointer;transition:all .2s;}
 .login-tab.active{background:var(--surface);color:var(--cyan);border-bottom:2px solid var(--cyan);}
-.login-panel{background:var(--surface);border:1px solid var(--border);padding:22px;}
-.login-field{margin-bottom:14px;}
+.login-panel{background:var(--surface);border:1px solid var(--border);padding:20px;}
+.login-field{margin-bottom:13px;}
 .login-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:3px;margin-bottom:6px;display:block;}
 .login-input{width:100%;background:var(--bg);border:1px solid var(--border);border-bottom:2px solid var(--cyan);color:var(--text);font-family:var(--mono);font-size:14px;padding:9px 10px;outline:none;transition:border-color .2s;}
 .login-input:focus{border-bottom-color:var(--green);}
 .login-input::placeholder{color:var(--muted);font-size:12px;}
 .login-btn{width:100%;padding:12px;background:var(--cyan);border:none;color:var(--bg);font-family:var(--mono);font-size:12px;letter-spacing:4px;cursor:pointer;font-weight:bold;transition:all .2s;margin-top:4px;}
 .login-btn:hover{background:var(--green);}
-.login-error{font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:1px;margin-top:10px;min-height:16px;text-align:center;}
-.login-info{font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center;margin-top:12px;line-height:1.6;}
-.login-info strong{color:var(--yellow);}
-.first-admin-badge{background:rgba(251,191,36,.1);border:1px solid var(--yellow);color:var(--yellow);font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:6px 10px;text-align:center;margin-bottom:14px;}
+.login-error{font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:1px;margin-top:8px;min-height:16px;text-align:center;}
+.first-admin-badge{background:rgba(251,191,36,.1);border:1px solid var(--yellow);color:var(--yellow);font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:6px 10px;text-align:center;margin-bottom:12px;}
+.login-divider{display:flex;align-items:center;gap:10px;margin:12px 0;font-family:var(--mono);font-size:9px;color:var(--muted);}
+.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.bio-user-btn{width:100%;padding:11px 14px;background:transparent;border:1px solid var(--green);color:var(--text);font-family:var(--mono);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .2s;text-align:left;margin-bottom:6px;}
+.bio-user-btn:hover{background:rgba(0,255,140,.08);}
+.bio-avatar{width:30px;height:30px;border-radius:50%;background:var(--green);color:var(--bg);font-weight:bold;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
+.bio-avatar.admin-av{background:var(--cyan);}
+.bio-info{flex:1;}
+.bio-name{font-size:13px;color:var(--text);}
+.bio-hint{font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:1px;}
 
 /* ── HEADER ── */
 header{text-align:center;padding:22px 0 18px;}
@@ -68,15 +87,18 @@ body.light header h1,body.light header h1 span{text-shadow:none;}
 .logout-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:9px;padding:4px 8px;cursor:pointer;letter-spacing:1px;transition:all .15s;}
 .logout-btn:hover{border-color:var(--red);color:var(--red);}
 
-/* ── STATUS BAR ── */
+/* ── SYNC INDICATOR ── */
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;transition:all .3s;}
+.sync-dot.syncing{background:var(--orange);animation:pulse 1s infinite;}
+.sync-dot.offline{background:var(--red);}
+
+/* ── STATUS / SCAN ── */
 .status-bar{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--cyan);padding:10px 14px;margin-bottom:14px;font-family:var(--mono);font-size:12px;}
 .status-dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:all .3s;}
 .status-dot.active{background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 1.5s infinite;}
 .status-dot.error{background:var(--red);box-shadow:0 0 8px var(--red);}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 #status-text{flex:1;}
-
-/* ── SCAN BTN ── */
 .scan-btn{width:100%;padding:15px;background:transparent;border:2px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-size:14px;letter-spacing:4px;cursor:pointer;position:relative;overflow:hidden;transition:all .2s;margin-bottom:18px;text-transform:uppercase;}
 .scan-btn::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(0,229,255,.1),transparent);transition:left .5s;}
 .scan-btn:hover::before{left:100%;}
@@ -94,22 +116,16 @@ body.light header h1,body.light header h1 span{text-shadow:none;}
 .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:14px;}
 .stat-card{background:var(--surface);border:1px solid var(--border);padding:9px;text-align:center;cursor:pointer;transition:border-color .15s;}
 .stat-card:hover{border-color:var(--cyan);}
-.stat-val{font-family:var(--mono);font-size:20px;color:var(--cyan);text-shadow:0 0 15px rgba(0,229,255,.4);}
+.stat-val{font-family:var(--mono);font-size:20px;color:var(--cyan);}
 body.light .stat-val{text-shadow:none;}
 .stat-label{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px;margin-top:2px;}
 .stat-val.orange{color:var(--orange);}.stat-val.red{color:var(--red);}.stat-val.green{color:var(--green);}
 
 /* ── TOOLBAR ── */
-.toolbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:5px;margin-bottom:6px;}
-.tool-btn{padding:8px 4px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:10px;letter-spacing:0;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;}
+.toolbar{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:6px;}
+.tool-btn{padding:8px 4px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:4px;white-space:nowrap;}
 .tool-btn:hover{border-color:var(--cyan);color:var(--cyan);}
-.tool-btn.install-btn{border-color:var(--green);color:var(--green);display:none;}
-.tool-btn.install-btn.visible{display:flex;}
-.tool-btn.sq{padding:0;font-size:16px;}
-.tool-btn.admin-only{border-color:rgba(0,229,255,.3);}
-.locked-msg{font-family:var(--mono);font-size:10px;color:var(--muted);background:rgba(251,191,36,.05);border:1px dashed rgba(251,191,36,.25);padding:8px 12px;margin-bottom:10px;letter-spacing:1px;}
-
-/* ── NFC WARNING ── */
+.locked-msg{font-family:var(--mono);font-size:10px;color:var(--muted);background:rgba(251,191,36,.05);border:1px dashed rgba(251,191,36,.25);padding:8px 12px;margin-bottom:10px;}
 .nfc-unsupported{background:rgba(255,61,90,.08);border:1px solid rgba(255,61,90,.3);border-left:3px solid var(--red);padding:11px 13px;font-family:var(--mono);font-size:11px;color:#ff8fa3;margin-bottom:14px;display:none;}
 
 /* ── FILTERS ── */
@@ -126,7 +142,7 @@ body.light .stat-val{text-shadow:none;}
 .cat-tabs-wrap{display:flex;align-items:center;gap:6px;margin-bottom:9px;}
 .cat-tabs{display:flex;gap:5px;overflow-x:auto;flex:1;scrollbar-width:none;}
 .cat-tabs::-webkit-scrollbar{display:none;}
-.cat-tab{padding:4px 11px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:9px;letter-spacing:1px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}
+.cat-tab{padding:4px 11px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:9px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}
 .cat-tab:hover,.cat-tab.active{border-color:var(--cyan);color:var(--cyan);}
 .cat-tab.active[data-color]{border-color:var(--tab-color,var(--cyan));color:var(--tab-color,var(--cyan));}
 .cat-manage-btn{width:26px;height:26px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;}
@@ -141,12 +157,10 @@ body.light .stat-val{text-shadow:none;}
 #search-input::placeholder{color:var(--muted);}
 .sort-select{background:var(--surface);border:1px solid var(--border);border-bottom:2px solid var(--cyan);color:var(--text);font-family:var(--mono);font-size:9px;padding:0 6px;outline:none;cursor:pointer;flex-shrink:0;}
 .sort-select option{background:var(--bg);}
-
-/* ── SECTION TITLE ── */
 .section-title{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:4px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
 .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
 
-/* ── TAG LIST/GRID ── */
+/* ── TAG CARDS ── */
 #tag-list{display:flex;flex-direction:column;gap:7px;}
 #tag-list.grid-view{display:grid;grid-template-columns:repeat(2,1fr);}
 .tag-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--cyan2);padding:11px 12px;display:flex;align-items:center;gap:10px;transition:all .2s;animation:slideIn .3s ease;position:relative;overflow:hidden;}
@@ -173,12 +187,9 @@ body.light .stat-val{text-shadow:none;}
 .tag-uid{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:1px;}
 .tag-meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;display:flex;flex-wrap:wrap;gap:3px;align-items:center;}
 .lent-days{color:var(--orange);}.unseen-alert{color:var(--red);}
-/* ── TAG ACTION DROPDOWN ── */
 .tag-actions{display:flex;gap:3px;flex-shrink:0;position:relative;}
 .btn-icon{width:30px;height:30px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .2s;flex-shrink:0;}
 .btn-icon:hover{border-color:var(--cyan);color:var(--cyan);}
-.btn-icon.delete:hover{border-color:var(--red);color:var(--red);}
-.btn-icon.star-on{border-color:var(--yellow);color:var(--yellow);}
 .btn-more{width:30px;height:30px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;letter-spacing:-2px;transition:all .2s;flex-shrink:0;}
 .btn-more:hover{border-color:var(--cyan);color:var(--cyan);}
 .tag-dropdown{position:fixed;background:var(--surface2);border:1px solid var(--cyan);z-index:2000;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,.7);display:none;flex-direction:column;}
@@ -201,25 +212,6 @@ body.light .stat-val{text-shadow:none;}
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:2px;border:1px dashed var(--border);}
 .empty-icon{font-size:32px;margin-bottom:12px;opacity:.4;}
 
-.bio-user-btn{width:100%;padding:11px 14px;background:transparent;border:1px solid var(--green);color:var(--text);font-family:var(--mono);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:all .2s;text-align:left;}
-.bio-user-btn:hover{background:rgba(0,255,140,.08);border-color:var(--green);}
-.bio-user-btn .bio-avatar{width:30px;height:30px;border-radius:50%;background:var(--green);color:var(--bg);font-weight:bold;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;}
-.bio-user-btn .bio-avatar.admin-av{background:var(--cyan);}
-.bio-user-btn .bio-info{flex:1;}
-.bio-user-btn .bio-name{font-size:13px;color:var(--text);}
-.bio-user-btn .bio-hint{font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:1px;}
-.bio-user-btn .bio-finger{font-size:20px;margin-left:auto;}
-
-.login-divider{display:flex;align-items:center;gap:10px;margin:14px 0;font-family:var(--mono);font-size:9px;color:var(--muted);}
-.login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border);}
-.bio-btn{width:100%;padding:12px;background:transparent;border:2px solid var(--green);color:var(--green);font-family:var(--mono);font-size:13px;letter-spacing:3px;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px;}
-.bio-btn:hover{background:rgba(0,255,140,.08);}
-.bio-btn:disabled{opacity:.35;cursor:not-allowed;}
-.bio-btn.scanning{animation:pulse 1s infinite;}
-.bio-register-btn{width:100%;padding:8px;background:transparent;border:1px solid var(--green);color:var(--green);font-family:var(--mono);font-size:9px;letter-spacing:2px;cursor:pointer;transition:all .2s;margin-top:6px;}
-.bio-register-btn:hover{background:rgba(0,255,140,.08);}
-.bio-register-btn.registered{border-color:var(--muted);color:var(--muted);}
-
 /* ── MODALS ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(6,11,16,.92);z-index:1000;display:none;align-items:flex-end;justify-content:center;padding:0;backdrop-filter:blur(4px);}
 .modal-overlay.open{display:flex;}
@@ -240,7 +232,6 @@ body.light .stat-val{text-shadow:none;}
 .fi:focus{border-bottom-color:var(--green);}
 .fi::placeholder{color:var(--muted);}
 .fta{width:100%;background:var(--bg);border:1px solid var(--border);border-bottom:2px solid var(--cyan);color:var(--text);font-family:var(--ui);font-size:12px;padding:8px 10px;outline:none;resize:vertical;min-height:60px;margin-bottom:10px;}
-.fta:focus{border-bottom-color:var(--green);}
 .fta::placeholder{color:var(--muted);}
 .ma{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 20px 20px;}
 .bp{padding:11px;background:var(--cyan);border:none;color:var(--bg);font-family:var(--mono);font-size:11px;letter-spacing:3px;cursor:pointer;font-weight:bold;transition:all .2s;}
@@ -260,7 +251,7 @@ body.light .stat-val{text-shadow:none;}
 .photo-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;}
 .photo-rm{font-family:var(--mono);font-size:10px;color:var(--red);cursor:pointer;border:none;background:transparent;margin-top:3px;}
 .status-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px;}
-.status-btn{padding:8px 4px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:9px;letter-spacing:1px;cursor:pointer;text-align:center;transition:all .15s;}
+.status-btn{padding:8px 4px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:9px;cursor:pointer;text-align:center;transition:all .15s;}
 .status-btn[data-val="available"].active{border-color:var(--green);color:var(--green);background:rgba(0,255,140,.07);}
 .status-btn[data-val="lent"].active{border-color:var(--orange);color:var(--orange);background:rgba(255,107,53,.07);}
 .status-btn[data-val="lost"].active{border-color:var(--red);color:var(--red);background:rgba(255,61,90,.07);}
@@ -280,6 +271,11 @@ body.light .stat-val{text-shadow:none;}
 .detail-row:last-child{border-bottom:none;}
 .detail-key{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;}
 .detail-val{font-family:var(--mono);font-size:10px;color:var(--text);text-align:right;word-break:break-all;max-width:62%;}
+.changelog-list{display:flex;flex-direction:column;gap:5px;max-height:240px;overflow-y:auto;}
+.cl-item{padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-left:2px solid var(--cyan2);}
+.cl-action{font-family:var(--mono);font-size:10px;color:var(--cyan);}
+.cl-detail{font-family:var(--ui);font-size:12px;margin-top:2px;}
+.cl-date{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;}
 .cat-list{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
 .cat-item{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--bg);border:1px solid var(--border);}
 .cat-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
@@ -293,30 +289,11 @@ body.light .stat-val{text-shadow:none;}
 .color-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
 .color-pick{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .15s;flex-shrink:0;}
 .color-pick.selected,.color-pick:hover{border-color:white;}
-
-/* ── SHARE MODAL ── */
 .share-user-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
 .share-user-row:last-child{border-bottom:none;}
 .share-checkbox{width:18px;height:18px;accent-color:var(--cyan);cursor:pointer;flex-shrink:0;}
 .share-user-name{font-family:var(--mono);font-size:12px;flex:1;}
 .share-user-role{font-family:var(--mono);font-size:9px;color:var(--muted);}
-
-/* ── USERS MODAL ── */
-.user-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:300px;overflow-y:auto;}
-.user-item{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg);border:1px solid var(--border);}
-.user-item-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:bold;flex-shrink:0;}
-.user-item-avatar.admin{background:var(--cyan);color:var(--bg);}
-.user-item-avatar.user{background:var(--muted);color:var(--bg);}
-.user-item-info{flex:1;min-width:0;}
-.user-item-name{font-family:var(--mono);font-size:11px;}
-.user-item-meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;}
-.user-item-actions{display:flex;gap:4px;}
-.u-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:9px;padding:3px 7px;cursor:pointer;transition:all .15s;}
-.u-btn:hover{border-color:var(--cyan);color:var(--cyan);}
-.u-btn.danger:hover{border-color:var(--red);color:var(--red);}
-.u-btn.promote{border-color:rgba(0,229,255,.4);color:var(--cyan);}
-
-/* ── SUMMARY/HISTORY/QR/SETTINGS/CHANGELOG ── */
 .summary-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:16px;}
 .summary-card{background:var(--bg);border:1px solid var(--border);padding:12px;text-align:center;}
 .summary-val{font-family:var(--mono);font-size:26px;}
@@ -334,11 +311,6 @@ body.light .stat-val{text-shadow:none;}
 .h-name{font-family:var(--ui);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .h-time{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:1px;}
 .h-badge{font-family:var(--mono);font-size:8px;padding:1px 5px;border:1px solid;flex-shrink:0;}
-.changelog-list{display:flex;flex-direction:column;gap:5px;max-height:240px;overflow-y:auto;}
-.cl-item{padding:7px 9px;background:var(--bg);border:1px solid var(--border);border-left:2px solid var(--cyan2);}
-.cl-action{font-family:var(--mono);font-size:10px;color:var(--cyan);}
-.cl-detail{font-family:var(--ui);font-size:12px;margin-top:2px;}
-.cl-date{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;}
 .qr-container{display:flex;flex-direction:column;align-items:center;gap:12px;padding:0 20px 16px;}
 .qr-box{background:#fff;padding:12px;border:2px solid var(--border);display:inline-flex;}
 #qr-canvas canvas,#qr-canvas img{display:block;}
@@ -346,11 +318,22 @@ body.light .stat-val{text-shadow:none;}
 .qr-hint{font-family:var(--mono);font-size:10px;color:var(--muted);text-align:center;}
 .qr-dl-btn{padding:9px 18px;background:transparent;border:1px solid var(--cyan);color:var(--cyan);font-family:var(--mono);font-size:10px;letter-spacing:3px;cursor:pointer;transition:all .2s;}
 .qr-dl-btn:hover{background:var(--cyan);color:var(--bg);}
+.user-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:300px;overflow-y:auto;}
+.user-item{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg);border:1px solid var(--border);}
+.user-item-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:bold;flex-shrink:0;}
+.user-item-avatar.admin{background:var(--cyan);color:var(--bg);}
+.user-item-avatar.user{background:var(--muted);color:var(--bg);}
+.user-item-info{flex:1;min-width:0;}
+.user-item-name{font-family:var(--mono);font-size:11px;}
+.user-item-meta{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px;}
+.user-item-actions{display:flex;gap:4px;}
+.u-btn{background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--mono);font-size:9px;padding:3px 7px;cursor:pointer;transition:all .15s;}
+.u-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.u-btn.danger:hover{border-color:var(--red);color:var(--red);}
+.u-btn.promote{border-color:rgba(0,229,255,.4);color:var(--cyan);}
 .settings-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
 .settings-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:2px;}
 .settings-hint{font-family:var(--mono);font-size:9px;color:var(--muted);}
-
-/* ── PIN ── */
 .pin-overlay{position:fixed;inset:0;background:rgba(6,11,16,.97);z-index:3000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(8px);}
 .pin-overlay.open{display:flex;}
 .pin-box{background:var(--surface);border:1px solid var(--cyan);box-shadow:0 0 60px rgba(0,229,255,.2);padding:28px 24px;width:100%;max-width:320px;animation:modalIn .25s ease;text-align:center;}
@@ -372,8 +355,6 @@ body.light .stat-val{text-shadow:none;}
 .pin-cancel-btn:hover{color:var(--red);}
 .pin-change-btn{text-decoration:underline;}
 .pin-change-btn:hover{color:var(--cyan);}
-
-/* ── TOAST ── */
 .toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--cyan);color:var(--text);font-family:var(--mono);font-size:11px;letter-spacing:2px;padding:10px 16px;z-index:4000;transition:transform .3s ease;white-space:nowrap;}
 .toast.show{transform:translateX(-50%) translateY(0);}
 .toast.success{border-color:var(--green);}
@@ -382,67 +363,65 @@ body.light .stat-val{text-shadow:none;}
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════════════════════
-     ÉCRAN DE CONNEXION
-══════════════════════════════════════════════════════════════ -->
-<div id="login-screen">
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loading-logo">NFC TAG<br><span>DATABASE</span></div>
+  <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+  <div class="loading-text">CONNEXION À FIREBASE…</div>
+</div>
+
+<!-- LOGIN -->
+<div id="login-screen" class="hidden">
   <div class="login-box">
     <div class="login-logo">
       <div class="logo-badge">NTAG 213</div>
       <h1>NFC TAG<br><span>DATABASE</span></h1>
     </div>
-    <div id="first-admin-notice" class="first-admin-badge" style="display:none">
-      👑 PREMIÈRE CONNEXION — TU DEVIENDRAS ADMINISTRATEUR
-    </div>
+    <div id="first-admin-badge" class="first-admin-badge" style="display:none">👑 PREMIÈRE CONNEXION = ADMINISTRATEUR</div>
     <div class="login-tabs">
-      <button class="login-tab active" id="tab-login" onclick="switchLoginTab('login')">CONNEXION</button>
-      <button class="login-tab" id="tab-invite" onclick="switchLoginTab('invite')">CODE D'INVITATION</button>
+      <button class="login-tab active" id="tab-login" onclick="switchTab('login')">CONNEXION</button>
+      <button class="login-tab" id="tab-register" onclick="switchTab('register')">CRÉER UN COMPTE</button>
     </div>
     <div class="login-panel">
-      <!-- BIOMETRIC AUTO-PROMPT -->
-      <div id="bio-auto-section" style="display:none;margin-bottom:0;">
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:10px;">CONNEXION RAPIDE</div>
-        <div id="bio-auto-list" style="display:flex;flex-direction:column;gap:7px;margin-bottom:14px;"></div>
+      <div id="bio-auto-section" style="display:none">
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:2px;margin-bottom:8px;">CONNEXION RAPIDE PAR EMPREINTE</div>
+        <div id="bio-auto-list"></div>
         <div class="login-divider">OU PAR MOT DE PASSE</div>
       </div>
-      <!-- LOGIN -->
       <div id="panel-login">
         <div class="login-field">
           <label class="login-label">NOM D'UTILISATEUR</label>
-          <input type="text" class="login-input" id="login-username" placeholder="Ton pseudo…" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()" oninput="updateBioBtn()"/>
+          <input type="text" class="login-input" id="login-username" placeholder="Ton pseudo…" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/>
         </div>
         <div class="login-field">
           <label class="login-label">MOT DE PASSE</label>
           <input type="password" class="login-input" id="login-password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
         </div>
         <button class="login-btn" onclick="doLogin()">SE CONNECTER</button>
-        <div id="bio-login-wrap" style="display:none;">
-          <div class="login-divider">OU</div>
-          <button class="bio-btn" id="bio-login-btn" onclick="loginWithBiometric()">
-            <span style="font-size:22px;">👆</span> EMPREINTE DIGITALE
-          </button>
-        </div>
         <div class="login-error" id="login-error"></div>
       </div>
-      <!-- INVITATION CODE -->
-      <div id="panel-invite" style="display:none">
-        <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:1px;margin-bottom:14px;line-height:1.6;">
-          Demande un code d'invitation à l'admin.<br>Colle-le ci-dessous pour créer ton compte.
+      <div id="panel-register" style="display:none">
+        <div class="login-field">
+          <label class="login-label">NOM D'UTILISATEUR</label>
+          <input type="text" class="login-input" id="reg-username" placeholder="Choisis un pseudo…" autocomplete="username" onkeydown="if(event.key==='Enter')doRegister()"/>
         </div>
         <div class="login-field">
-          <label class="login-label">CODE D'INVITATION</label>
-          <textarea class="login-input" id="invite-code-input" placeholder="Colle le code ici…" style="height:80px;resize:none;font-size:10px;line-height:1.4;" onkeydown="if(event.ctrlKey&&event.key==='Enter')useInviteCode()"></textarea>
+          <label class="login-label">MOT DE PASSE</label>
+          <input type="password" class="login-input" id="reg-password" placeholder="Mot de passe…" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/>
         </div>
-        <button class="login-btn" onclick="useInviteCode()">UTILISER LE CODE</button>
-        <div class="login-error" id="invite-error"></div>
+        <div class="login-field">
+          <label class="login-label">CONFIRMER</label>
+          <input type="password" class="login-input" id="reg-password2" placeholder="Répète le mot de passe…" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/>
+        </div>
+        <button class="login-btn" onclick="doRegister()">CRÉER LE COMPTE</button>
+        <div class="login-error" id="reg-error"></div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:10px;text-align:center;line-height:1.6;">Le <strong style="color:var(--yellow);">premier compte</strong> sera automatiquement administrateur.</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════════
-     APP PRINCIPALE
-══════════════════════════════════════════════════════════════ -->
+<!-- APP -->
 <div class="container">
   <header>
     <div class="logo-badge">NTAG 213</div>
@@ -451,18 +430,17 @@ body.light .stat-val{text-shadow:none;}
     <div class="header-line"></div>
   </header>
 
-  <!-- BARRE UTILISATEUR -->
   <div class="user-bar">
     <div class="user-avatar" id="user-avatar">?</div>
     <span class="user-name" id="user-name-display">—</span>
     <span class="user-role" id="user-role-badge">USER</span>
-    <button class="logout-btn" id="bio-register-bar-btn" onclick="registerBiometric()" title="Enregistrer empreinte" style="border-color:var(--green);color:var(--green);display:none;">👆</button>
+    <div class="sync-dot" id="sync-dot" title="Connexion Firebase"></div>
+    <button class="logout-btn" id="bio-btn" onclick="registerBiometric()" style="display:none;border-color:var(--green);color:var(--green);" title="Enregistrer empreinte">👆</button>
     <button class="logout-btn" onclick="doLogout()">DÉCONNECTER</button>
   </div>
 
   <div class="nfc-unsupported" id="nfc-unsupported">⚠ WEB NFC NON SUPPORTÉ — Utilisez Chrome Android.</div>
   <div class="status-bar"><div class="status-dot" id="sd"></div><span id="status-text">Prêt.</span></div>
-
   <button class="scan-btn" id="scan-btn" onclick="toggleScan()">
     <span id="scan-label"><span class="scan-waves"><span class="wave-ring"></span><span class="wave-ring"></span><span class="wave-ring"></span></span>&nbsp;&nbsp;SCANNER UN TAG</span>
   </button>
@@ -473,15 +451,14 @@ body.light .stat-val{text-shadow:none;}
     <div class="stat-card" onclick="openSummaryModal()"><div class="stat-val" id="stat-scanned">0</div><div class="stat-label">SCANS</div></div>
   </div>
 
-  <!-- TOOLBAR ADMIN -->
-  <div id="toolbar-admin">
-    <div class="toolbar" style="grid-template-columns:repeat(4,1fr);margin-bottom:5px;">
+  <div id="toolbar-admin" style="display:none">
+    <div class="toolbar" style="margin-bottom:5px;">
       <button class="tool-btn" onclick="openHistoryModal()">📋 HISTORIQUE</button>
       <button class="tool-btn" onclick="openSummaryModal()">📊 RÉSUMÉ</button>
       <button class="tool-btn" onclick="requirePIN(openUsersModal)" style="border-color:var(--yellow);color:var(--yellow);">👥 COMPTES</button>
       <button class="tool-btn" onclick="requirePIN(lockApp)" id="lock-btn" style="font-size:16px;">🔓</button>
     </div>
-    <div class="toolbar" style="grid-template-columns:repeat(4,1fr);">
+    <div class="toolbar">
       <button class="tool-btn" onclick="requirePIN(()=>exportData())">⬆ EXPORT</button>
       <button class="tool-btn" onclick="requirePIN(()=>document.getElementById('import-input').click())">⬇ IMPORT</button>
       <button class="tool-btn" onclick="requirePIN(openSettingsModal)">⚙ RÉGLAGES</button>
@@ -490,26 +467,22 @@ body.light .stat-val{text-shadow:none;}
     <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)">
   </div>
 
-  <!-- TOOLBAR USER (limité) -->
-  <div class="toolbar" id="toolbar-user" style="display:none">
-    <button class="tool-btn install-btn" id="install-btn-u" onclick="installPWA()">📲</button>
-    <button class="tool-btn" onclick="openHistoryModal()">📋 HISTORIQUE</button>
-    <button class="tool-btn" onclick="openSummaryModal()">📊 RÉSUMÉ</button>
-    <button class="tool-btn sq" id="theme-btn-u" onclick="toggleTheme()">🌙</button>
+  <div id="toolbar-user" style="display:none">
+    <div class="toolbar" style="grid-template-columns:repeat(3,1fr);">
+      <button class="tool-btn" onclick="openHistoryModal()">📋 HISTORIQUE</button>
+      <button class="tool-btn" onclick="openSummaryModal()">📊 RÉSUMÉ</button>
+      <button class="tool-btn" onclick="toggleTheme()" id="theme-btn-u" style="font-size:16px;">🌙</button>
+    </div>
   </div>
-  <!-- MESSAGE COMPTE LIMITÉ -->
-  <div class="locked-msg" id="locked-msg" style="display:none">
-    🔒 Compte limité — lecture seule. Contacte l'admin pour plus d'accès.
-  </div>
+
+  <div class="locked-msg" id="locked-msg" style="display:none">🔒 Compte limité — lecture seule.</div>
 
   <div class="section-title">TAGS ENREGISTRÉS</div>
-
   <div class="cat-tabs-wrap">
     <div class="cat-tabs" id="cat-tabs"></div>
-    <button class="cat-manage-btn" id="cat-manage-btn" onclick="requirePIN(openCatModal)" title="Catégories">⚙</button>
-    <button class="cat-manage-btn" id="view-btn" onclick="toggleView()" title="Vue">▤</button>
+    <button class="cat-manage-btn" id="cat-manage-btn" onclick="requirePIN(openCatModal)">⚙</button>
+    <button class="cat-manage-btn" id="view-btn" onclick="toggleView()">▤</button>
   </div>
-
   <div class="filter-row">
     <button class="f-btn active" data-sf="all" onclick="setSF('all')">TOUS</button>
     <button class="f-btn f-avail" data-sf="available" onclick="setSF('available')">🟢 DISPO</button>
@@ -518,7 +491,6 @@ body.light .stat-val{text-shadow:none;}
     <button class="f-btn f-fav" data-sf="pinned" onclick="setSF('pinned')">⭐ FAVORIS</button>
     <button class="f-btn" data-sf="archived" onclick="setSF('archived')">📦 ARCHIVÉS</button>
   </div>
-
   <div class="search-sort-row">
     <div class="search-wrap"><span class="si">🔍</span><input type="text" id="search-input" placeholder="Rechercher..." oninput="filterTags()"/></div>
     <select class="sort-select" id="sort-select" onchange="filterTags()">
@@ -530,11 +502,10 @@ body.light .stat-val{text-shadow:none;}
       <option value="status">STATUT</option>
     </select>
   </div>
-
   <div id="tag-list"></div>
 </div>
 
-<!-- MODAL SCAN ACTION -->
+<!-- MODALS -->
 <div class="modal-overlay" id="scan-action-modal">
   <div class="modal" style="border-color:var(--green);">
     <div class="mh"><div class="mb" style="color:var(--green)">TAG SCANNÉ</div><h2 id="sa-title" style="font-size:18px;color:var(--green);margin-bottom:4px;"></h2><div class="muid" id="sa-uid" style="margin-bottom:14px;"></div></div>
@@ -547,17 +518,16 @@ body.light .stat-val{text-shadow:none;}
         <button class="bp" id="sa-lost-btn" style="background:rgba(255,61,90,.1);border:1px solid var(--red);color:var(--red);" onclick="markLostFromScan()">🔴 MARQUER COMME PERDU</button>
       </div>
     </div>
-    <div style="padding:8px 20px 16px;"><div id="sa-borrower-wrap" style="display:none;margin-top:8px;"><label class="fl">PRÊTÉ À</label><input type="text" class="fi" id="sa-borrower" placeholder="Nom de la personne…" maxlength="40"/><button class="bp" style="width:100%;" onclick="confirmLentFromScan()">✓ CONFIRMER LE PRÊT</button></div></div>
+    <div style="padding:8px 20px 16px;"><div id="sa-borrower-wrap" style="display:none;margin-top:8px;"><label class="fl">PRÊTÉ À</label><input type="text" class="fi" id="sa-borrower" placeholder="Nom…" maxlength="40"/><button class="bp" style="width:100%;" onclick="confirmLentFromScan()">✓ CONFIRMER</button></div></div>
     <div class="ma" style="padding-top:0;"><button class="bs" style="grid-column:1/-1;" onclick="closeScanAction()">ANNULER</button></div>
   </div>
 </div>
 
-<!-- MODAL ENREGISTREMENT -->
 <div class="modal-overlay" id="register-modal">
   <div class="modal">
     <div class="mh"><div class="mb" id="modal-badge">NOUVEAU TAG</div><h2 id="modal-title">Enregistrer</h2><div class="muid" id="modal-uid">UID: —</div></div>
     <div class="ms"><div class="mst">IDENTIFICATION</div>
-      <label class="fl">NOM</label><input type="text" class="fi" id="tag-name-input" placeholder="Ex : Câble chargeur bureau" maxlength="60" onkeydown="if(event.key==='Enter')saveTag()"/>
+      <label class="fl">NOM</label><input type="text" class="fi" id="tag-name-input" placeholder="Ex : Câble chargeur" maxlength="60" onkeydown="if(event.key==='Enter')saveTag()"/>
       <label class="fl">ICÔNE</label><div class="emoji-row" id="emoji-row"></div>
       <label class="fl">CATÉGORIE</label><select class="cat-select" id="cat-select"></select>
     </div>
@@ -583,7 +553,6 @@ body.light .stat-val{text-shadow:none;}
   </div>
 </div>
 
-<!-- MODAL DÉTAIL -->
 <div class="modal-overlay" id="detail-modal">
   <div class="modal">
     <div class="mh"><div class="mb">TAG RECONNU</div><h2 id="detail-name" style="font-size:18px;color:var(--green);margin-bottom:12px;"></h2></div>
@@ -592,51 +561,45 @@ body.light .stat-val{text-shadow:none;}
       <img class="detail-photo" id="detail-photo" alt=""/>
       <div class="detail-notes-box" id="detail-notes"></div>
       <div id="detail-rows"></div>
-      <div style="margin-top:12px;"><div class="mst" style="border-top:1px solid var(--border);padding-top:8px;">JOURNAL DES MODIFICATIONS</div>
+      <div style="margin-top:12px;"><div class="mst" style="border-top:1px solid var(--border);padding-top:8px;">JOURNAL</div>
         <div class="changelog-list" id="detail-changelog"></div>
       </div>
     </div>
-    <div class="ma" style="margin-top:14px;grid-template-columns:1fr 1fr 1fr;" id="detail-actions">
+    <div class="ma" style="margin-top:14px;grid-template-columns:1fr 1fr 1fr;">
       <button class="bs" onclick="closeDetailModal()">FERMER</button>
-      <button class="bp" id="detail-share-btn" style="background:var(--cyan2);display:none;" onclick="closeDetailModal();openShareModal(detailUID)">👥 PARTAGER</button>
-      <button class="bp" id="detail-edit-btn" onclick="editFromDetail()">MODIFIER</button>
+      <button class="bp" id="detail-share-btn" style="background:var(--cyan2);display:none;" onclick="closeDetailModal();openShareModal(detailUID)">👥</button>
+      <button class="bp" id="detail-edit-btn" style="display:none;" onclick="editFromDetail()">MODIFIER</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL RETOUR -->
 <div class="modal-overlay" id="return-modal">
   <div class="modal" style="border-color:var(--orange);">
     <div class="mh"><div class="mb" id="return-badge" style="color:var(--orange)">TAG PRÊTÉ</div><h2 id="return-title" style="font-size:16px;margin-bottom:6px;"></h2><div class="detail-banner lent" id="return-banner" style="margin-bottom:14px;"></div></div>
     <div style="padding:0 20px 6px;font-family:var(--mono);font-size:11px;line-height:1.8;" id="return-msg"></div>
-    <div class="ma" style="margin-top:16px;" id="return-actions">
-      <button class="bs" onclick="closeReturnModal()">LAISSER TEL QUEL</button>
-      <button class="bp" style="background:var(--green);" onclick="markAsAvailable()">✓ MARQUER DISPO</button>
-    </div>
+    <div class="ma" style="margin-top:16px;" id="return-actions"></div>
   </div>
 </div>
 
-<!-- MODAL RÉSUMÉ -->
 <div class="modal-overlay" id="summary-modal">
   <div class="modal" style="border-color:var(--muted);">
     <div class="mh"><div class="mb" style="color:var(--muted)">RÉSUMÉ</div><h2 style="margin-bottom:14px;">Vue d'ensemble</h2></div>
     <div class="ms">
       <div class="summary-grid" id="summary-grid"></div>
-      <div class="mst">SCANS DES 7 DERNIERS JOURS</div>
+      <div class="mst">SCANS (7 JOURS)</div>
       <canvas id="scan-chart"></canvas><div class="chart-labels" id="chart-labels"></div>
       <div class="mst" style="margin-top:14px;">TOP 3 — PLUS SCANNÉS</div>
       <div id="top-tags"></div>
-      <div class="mst" style="margin-top:12px;" id="unseen-title">NON SCANNÉS DEPUIS +30 JOURS</div>
+      <div class="mst" style="margin-top:12px;" id="unseen-title">NON SCANNÉS DEPUIS +30J</div>
       <div id="unseen-tags"></div>
     </div>
     <div class="ma"><button class="bs" style="grid-column:1/-1;" onclick="closeSummaryModal()">FERMER</button></div>
   </div>
 </div>
 
-<!-- MODAL HISTORIQUE -->
 <div class="modal-overlay" id="history-modal">
   <div class="modal" style="border-color:var(--muted);">
-    <div class="mh"><div class="mb" style="color:var(--muted)">JOURNAL</div><h2 style="margin-bottom:14px;">20 derniers scans</h2></div>
+    <div class="mh"><div class="mb" style="color:var(--muted)">JOURNAL</div><h2 style="margin-bottom:14px;">Derniers scans</h2></div>
     <div style="padding:0 20px;">
       <div class="history-list" id="history-list"></div>
       <div style="margin-top:10px;"><button class="bs" style="width:100%;font-size:10px;" onclick="clearHistory()">🗑 EFFACER</button></div>
@@ -645,7 +608,6 @@ body.light .stat-val{text-shadow:none;}
   </div>
 </div>
 
-<!-- MODAL QR -->
 <div class="modal-overlay" id="qr-modal">
   <div class="modal" style="border-color:var(--cyan2);">
     <div class="mh"><div class="mb">QR CODE DE SECOURS</div><h2 id="qr-title" style="font-size:15px;margin-bottom:4px;"></h2><div class="muid" id="qr-uid" style="margin-bottom:12px;"></div></div>
@@ -654,7 +616,16 @@ body.light .stat-val{text-shadow:none;}
   </div>
 </div>
 
-<!-- MODAL CATÉGORIES -->
+<div class="modal-overlay" id="share-modal">
+  <div class="modal" style="border-color:var(--cyan2);">
+    <div class="mh"><div class="mb" style="color:var(--cyan2)">PARTAGE</div><h2 id="share-title" style="font-size:15px;margin-bottom:4px;"></h2>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:14px;">Les utilisateurs cochés voient ce tag en temps réel.</div>
+    </div>
+    <div class="ms"><div id="share-users-list"></div></div>
+    <div class="ma"><button class="bs" onclick="closeShareModal()">ANNULER</button><button class="bp" onclick="saveShare()">SAUVEGARDER</button></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="cat-modal">
   <div class="modal" style="border-color:var(--muted);">
     <div class="mh"><div class="mb" style="color:var(--muted)">GESTION</div><h2 style="margin-bottom:14px;">Catégories</h2></div>
@@ -668,68 +639,33 @@ body.light .stat-val{text-shadow:none;}
   </div>
 </div>
 
-<!-- MODAL RÉGLAGES -->
 <div class="modal-overlay" id="settings-modal">
   <div class="modal" style="border-color:var(--muted);">
     <div class="mh"><div class="mb" style="color:var(--muted)">RÉGLAGES</div><h2 style="margin-bottom:14px;">Paramètres</h2></div>
     <div class="ms">
       <div class="mst">ALERTES</div>
-      <div class="settings-row"><label class="settings-lbl">ALERTE NON SCANNÉ DEPUIS (JOURS)</label><input type="number" class="fi" id="s-unseen" value="30" min="1" max="365" style="margin-bottom:4px;"/><span class="settings-hint">Badge rouge sur les tags oubliés.</span></div>
-      <div class="settings-row"><label class="settings-lbl">RAPPEL PRÊT DEPUIS (JOURS)</label><input type="number" class="fi" id="s-lent" value="7" min="1" max="365" style="margin-bottom:4px;"/><span class="settings-hint">Notification si un objet est prêté trop longtemps.</span></div>
+      <div class="settings-row"><label class="settings-lbl">ALERTE NON SCANNÉ DEPUIS (JOURS)</label><input type="number" class="fi" id="s-unseen" value="30" min="1" max="365" style="margin-bottom:4px;"/></div>
+      <div class="settings-row"><label class="settings-lbl">RAPPEL PRÊT DEPUIS (JOURS)</label><input type="number" class="fi" id="s-lent" value="7" min="1" max="365" style="margin-bottom:4px;"/></div>
       <div class="mst">WEBHOOK</div>
-      <div class="settings-row"><label class="settings-lbl">URL WEBHOOK</label><input type="text" class="fi" id="s-webhook" placeholder="https://..." style="margin-bottom:4px;"/><span class="settings-hint">POST JSON envoyé à chaque scan. Compatible Discord, Zapier…</span></div>
+      <div class="settings-row"><label class="settings-lbl">URL WEBHOOK</label><input type="text" class="fi" id="s-webhook" placeholder="https://..." style="margin-bottom:4px;"/><span class="settings-hint">POST JSON à chaque scan. Compatible Discord, Zapier…</span></div>
       <div class="mst" style="color:var(--red);border-color:rgba(255,61,90,.3);">⚠ ZONE DANGER — CE TÉLÉPHONE</div>
-      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);line-height:1.7;margin-bottom:10px;">
-        Ces actions effacent uniquement les données stockées <strong style="color:var(--text);">sur ce téléphone</strong>. Utile pour supprimer un vieux compte ou repartir de zéro.
-      </div>
-      <button onclick="clearLocalAccount()" style="width:100%;padding:11px;background:transparent;border:1px solid var(--orange);color:var(--orange);font-family:var(--mono);font-size:10px;letter-spacing:2px;cursor:pointer;margin-bottom:8px;">
-        🗑 SUPPRIMER MON COMPTE SUR CE TÉLÉPHONE
-      </button>
-      <button onclick="clearAllLocalData()" style="width:100%;padding:11px;background:transparent;border:1px solid var(--red);color:var(--red);font-family:var(--mono);font-size:10px;letter-spacing:2px;cursor:pointer;">
-        💣 EFFACER TOUTES LES DONNÉES DE CE TÉLÉPHONE
-      </button>
+      <button onclick="clearLocalSession()" style="width:100%;padding:10px;background:transparent;border:1px solid var(--red);color:var(--red);font-family:var(--mono);font-size:10px;letter-spacing:2px;cursor:pointer;">💣 EFFACER LA SESSION LOCALE</button>
     </div>
     <div class="ma"><button class="bs" onclick="closeSettingsModal()">ANNULER</button><button class="bp" onclick="saveSettings()">SAUVEGARDER</button></div>
   </div>
 </div>
 
-<!-- MODAL PARTAGE -->
-<div class="modal-overlay" id="share-modal">
-  <div class="modal" style="border-color:var(--cyan2);">
-    <div class="mh"><div class="mb" style="color:var(--cyan2)">PARTAGE</div><h2 id="share-title" style="font-size:15px;margin-bottom:4px;"></h2><div style="font-family:var(--mono);font-size:10px;color:var(--muted);margin-bottom:14px;">Choisis qui peut voir ce tag</div></div>
-    <div class="ms"><div id="share-users-list"></div></div>
-    <div class="ma"><button class="bs" onclick="closeShareModal()">FERMER</button><button class="bp" onclick="saveShare()">SAUVEGARDER</button></div>
-  </div>
-</div>
-
-<!-- MODAL COMPTES (ADMIN) -->
 <div class="modal-overlay" id="users-modal">
   <div class="modal" style="border-color:var(--yellow);">
     <div class="mh"><div class="mb" style="color:var(--yellow)">ADMINISTRATION</div><h2 style="margin-bottom:14px;">Gestion des comptes</h2></div>
     <div class="ms">
-      <div class="mst">CRÉER UN COMPTE UTILISATEUR</div>
-      <label class="fl">PSEUDO</label>
-      <input type="text" class="fi" id="new-user-name" placeholder="pseudo (lettres/chiffres)" maxlength="20" onkeydown="if(event.key==='Enter')document.getElementById('new-user-pass').focus()"/>
-      <label class="fl">MOT DE PASSE</label>
-      <input type="password" class="fi" id="new-user-pass" placeholder="mot de passe" onkeydown="if(event.key==='Enter')createUserAccount()"/>
-      <div style="display:flex;gap:8px;margin-bottom:14px;">
-        <button class="bp" style="flex:1;" onclick="createUserAccount()">✓ CRÉER + GÉNÉRER CODE</button>
-      </div>
-      <!-- Invite code output -->
-      <div id="invite-code-output" style="display:none;margin-bottom:14px;">
-        <div class="mst" style="border-top:none;padding-top:0;color:var(--green);">CODE D'INVITATION GÉNÉRÉ</div>
-        <textarea id="invite-code-text" readonly style="width:100%;background:var(--bg);border:1px solid var(--green);color:var(--green);font-family:var(--mono);font-size:9px;padding:8px;height:80px;outline:none;resize:none;line-height:1.4;"></textarea>
-        <button class="bp" style="width:100%;margin-top:5px;background:var(--green);" onclick="copyInviteCode()">📋 COPIER LE CODE</button>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:6px;line-height:1.6;">Envoie ce code par WhatsApp ou SMS. L'utilisateur le colle dans "CODE D'INVITATION".</div>
-      </div>
-      <div class="mst">UTILISATEURS ENREGISTRÉS</div>
+      <div class="mst">UTILISATEURS</div>
       <div class="user-list" id="users-list"></div>
     </div>
     <div class="ma"><button class="bs" style="grid-column:1/-1;" onclick="closeUsersModal()">FERMER</button></div>
   </div>
 </div>
 
-<!-- MODAL PIN -->
 <div class="pin-overlay" id="pin-overlay">
   <div class="pin-box">
     <div class="pin-lock-icon" id="pin-icon">🔒</div>
@@ -752,270 +688,236 @@ body.light .stat-val{text-shadow:none;}
 
 <script>
 // ════════════════════════════════════════════════════════════════
-// CONSTANTS & STORAGE
+// FIREBASE INIT
+// ════════════════════════════════════════════════════════════════
+const firebaseConfig={
+  apiKey:"AIzaSyDEOJrlBxiQuj_NcVKfmTOp7YzY3eixCDY",
+  authDomain:"nfc-database-6c337.firebaseapp.com",
+  databaseURL:"https://nfc-database-6c337-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"nfc-database-6c337",
+  storageBucket:"nfc-database-6c337.firebasestorage.app",
+  messagingSenderId:"254745735231",
+  appId:"1:254745735231:web:e3846d79cb4d34b249488a"
+};
+firebase.initializeApp(firebaseConfig);
+const fbdb=firebase.database();
+const tagsRef=fbdb.ref('tags');
+const accountsRef=fbdb.ref('accounts');
+const catsRef=fbdb.ref('categories');
+const statsRef=fbdb.ref('stats');
+const historyRef=fbdb.ref('history');
+const settingsRef=fbdb.ref('settings');
+
+// ════════════════════════════════════════════════════════════════
+// CONSTANTS
 // ════════════════════════════════════════════════════════════════
 const APP_URL=window.location.origin+window.location.pathname.replace(/\/$/,'');
-const DB_KEY='nfc_v5_tags',CAT_KEY='nfc_v5_cats',STATS_KEY='nfc_v5_stats';
-const HISTORY_KEY='nfc_v5_history',THEME_KEY='nfc_v5_theme',PIN_KEY='nfc_v5_pin',SETTINGS_KEY='nfc_v5_settings';
-const ACCOUNTS_KEY='nfc_v5_accounts',SESSION_KEY='nfc_v5_session';
+const THEME_KEY='nfc_theme',PIN_KEY='nfc_pin',SESSION_KEY='nfc_session';
 const EMOJIS=['📦','🔌','💡','🔑','🗝️','📱','💻','🖥️','🎧','🎮','📷','🚗','🧳','🏠','📚','🗂️','🔧','🔩','💊','🎁','🛒','🎵','🏋️','🐾','🖨️','📺','🔋','⌨️','🖱️','🎒'];
 const CAT_COLORS=['#00e5ff','#00ff8c','#ff6b35','#ff3d5a','#a78bfa','#fbbf24','#34d399','#60a5fa','#f472b6','#fb923c'];
 const DEFAULT_CATS=[{id:'cat_gen',name:'Général',color:'#00e5ff'},{id:'cat_elec',name:'Électronique',color:'#00ff8c'},{id:'cat_maison',name:'Maison',color:'#fbbf24'},{id:'cat_perso',name:'Personnel',color:'#a78bfa'}];
 const SL={available:'🟢 DISPONIBLE',lent:'🟡 PRÊTÉ',lost:'🔴 PERDU'};
 
-const loadDB=()=>{try{return JSON.parse(localStorage.getItem(DB_KEY))||{};}catch{return{};}};
-const saveDB=db=>localStorage.setItem(DB_KEY,JSON.stringify(db));
-const loadCats=()=>{try{const c=JSON.parse(localStorage.getItem(CAT_KEY));return c&&c.length?c:DEFAULT_CATS;}catch{return DEFAULT_CATS;}};
-const saveCats=c=>localStorage.setItem(CAT_KEY,JSON.stringify(c));
-const loadStats=()=>{try{return JSON.parse(localStorage.getItem(STATS_KEY))||{totalScans:0};}catch{return{totalScans:0};}};
-const saveStats=s=>localStorage.setItem(STATS_KEY,JSON.stringify(s));
-const loadHistory=()=>{try{return JSON.parse(localStorage.getItem(HISTORY_KEY))||[];}catch{return[];}};
-const saveHistory=h=>localStorage.setItem(HISTORY_KEY,JSON.stringify(h));
-const loadSettings=()=>{try{return JSON.parse(localStorage.getItem(SETTINGS_KEY))||{unseenDays:30,lentDays:7,webhook:''};}catch{return{unseenDays:30,lentDays:7,webhook:''};}};
-const saveSettingsData=s=>localStorage.setItem(SETTINGS_KEY,JSON.stringify(s));
-const loadAccounts=()=>{try{return JSON.parse(localStorage.getItem(ACCOUNTS_KEY))||{};}catch{return{};}};
-const saveAccounts=a=>localStorage.setItem(ACCOUNTS_KEY,JSON.stringify(a));
+// ════════════════════════════════════════════════════════════════
+// LOCAL CACHE (updated by Firebase listeners)
+// ════════════════════════════════════════════════════════════════
+let cachedTags={},cachedAccounts={},cachedCats=DEFAULT_CATS;
+let cachedStats={totalScans:0},cachedHistory=[],cachedSettings={unseenDays:30,lentDays:7,webhook:''};
+
+const loadDB=()=>cachedTags;
+const saveDB=t=>{cachedTags=t;tagsRef.set(t);};
+const loadCats=()=>cachedCats.length?cachedCats:DEFAULT_CATS;
+const saveCats=c=>{cachedCats=c;catsRef.set(c);};
+const loadStats=()=>cachedStats;
+const saveStats=s=>{cachedStats=s;statsRef.set(s);};
+const loadHistory=()=>cachedHistory;
+const saveHistory=h=>{cachedHistory=h;historyRef.set(h);};
+const loadSettings=()=>cachedSettings;
+const saveSettingsData=s=>{cachedSettings=s;settingsRef.set(s);};
+const loadAccounts=()=>cachedAccounts;
+const saveAccounts=a=>{cachedAccounts=a;accountsRef.set(a);};
 
 // ════════════════════════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════════════════════════
 let isScanning=false,nfcReader=null;
-let scanActionUID=null;
-let currentUID=null,editUID=null,pendingWriteUID=null,detailUID=null,currentQRUID=null;
+let scanActionUID=null,currentUID=null,editUID=null,pendingWriteUID=null,detailUID=null,currentQRUID=null,shareUID=null;
 let selectedEmoji='📦',selectedStatus='available',selectedColor=CAT_COLORS[0];
 let currentPhoto=null,activeCatFilter='all',activeSF='all',isGridView=false;
 let deferredPrompt=null;
 let pinBuffer='',pinMode='verify',pinCallback=null,pinStep=0,pinFirstEntry='';
-let currentUser=null; // { username, role }
+let currentUser=null;
+let fbReady=false;
 
 // ════════════════════════════════════════════════════════════════
-// ACCOUNT SYSTEM
+// FIREBASE LISTENERS
 // ════════════════════════════════════════════════════════════════
-function hashPass(p){
-  let h=5381;for(let i=0;i<p.length;i++){h=((h<<5)+h)+p.charCodeAt(i);h|=0;}return(h>>>0).toString(36);
+function setupListeners(){
+  setSyncDot('syncing');
+
+  tagsRef.on('value',snap=>{
+    cachedTags=snap.val()||{};
+    if(fbReady){renderList();updateStats();renderCatTabs();}
+  });
+
+  accountsRef.on('value',snap=>{
+    cachedAccounts=snap.val()||{};
+    if(fbReady&&currentUser){
+      const acc=cachedAccounts[currentUser.username];
+      if(acc&&acc.role!==currentUser.role){
+        currentUser.role=acc.role;
+        sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
+        updateUserBar();applyRoleUI();
+        showToast('🔄 Ton rôle a été mis à jour','success');
+      }
+      if(isUsersModalOpen())renderUsersList();
+    }
+  });
+
+  catsRef.on('value',snap=>{
+    const val=snap.val();
+    if(val){
+      cachedCats=Array.isArray(val)?val:Object.values(val);
+    }else{cachedCats=DEFAULT_CATS;}
+    if(fbReady){renderCatTabs();populateCatSelect();}
+  });
+
+  statsRef.on('value',snap=>{
+    cachedStats=snap.val()||{totalScans:0};
+    if(fbReady)document.getElementById('stat-scanned').textContent=cachedStats.totalScans||0;
+  });
+
+  historyRef.on('value',snap=>{
+    const val=snap.val();
+    cachedHistory=val?(Array.isArray(val)?val:Object.values(val)):[];
+  });
+
+  settingsRef.on('value',snap=>{
+    cachedSettings=snap.val()||{unseenDays:30,lentDays:7,webhook:''};
+  });
+
+  // Connection state
+  fbdb.ref('.info/connected').on('value',snap=>{
+    setSyncDot(snap.val()?'online':'offline');
+  });
 }
-function isAdmin(){return currentUser&&currentUser.role==='admin';}
-function requireAdmin(){if(!isAdmin()){showToast('⛔ Accès réservé à l\'admin','error-t');return false;}return true;}
 
-function initAccounts(){
-  const accounts=loadAccounts();
+function setSyncDot(state){
+  const d=document.getElementById('sync-dot');if(!d)return;
+  d.className='sync-dot'+(state==='syncing'?' syncing':state==='offline'?' offline':'');
+  d.title=state==='online'?'Connecté Firebase':state==='offline'?'Hors ligne':'Synchronisation…';
+}
+function isUsersModalOpen(){return document.getElementById('users-modal').classList.contains('open');}
+
+// ════════════════════════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  initTheme();
+  setupListeners();
+  // Wait for initial Firebase load
+  let loaded=0;
+  const checkReady=()=>{loaded++;if(loaded>=3)onFirebaseReady();};
+  tagsRef.once('value',()=>checkReady());
+  accountsRef.once('value',()=>checkReady());
+  catsRef.once('value',()=>checkReady());
+  setTimeout(()=>{if(!fbReady)onFirebaseReady();},5000); // timeout fallback
+});
+
+function onFirebaseReady(){
+  if(fbReady)return;
+  fbReady=true;
+  document.getElementById('loading-screen').classList.add('hidden');
   const sess=sessionStorage.getItem(SESSION_KEY);
   if(sess){
     try{
       const u=JSON.parse(sess);
-      if(accounts[u.username]&&accounts[u.username].role===u.role){currentUser=u;initApp();return;}
+      const acc=cachedAccounts[u.username];
+      if(acc){currentUser={username:u.username,role:acc.role};initApp();return;}
     }catch{}
   }
   showLoginScreen();
 }
 
 function showLoginScreen(){
-  document.getElementById('login-screen').classList.remove('hidden');
-  const accounts=loadAccounts();
-  const notice=document.getElementById('first-admin-notice');
-  notice.style.display=Object.keys(accounts).length===0?'block':'none';
+  const hasAccounts=Object.keys(cachedAccounts).length>0;
+  document.getElementById('first-admin-badge').style.display=hasAccounts?'none':'block';
+  document.getElementById('panel-register').style.display=hasAccounts?'none':'block';
+  document.getElementById('panel-login').style.display=hasAccounts?'block':'none';
+  document.getElementById('tab-login').classList.toggle('active',hasAccounts);
+  document.getElementById('tab-register').classList.toggle('active',!hasAccounts);
+  if(!hasAccounts){
+    document.querySelector('.login-tabs').style.display='none';
+  }
   initBioAutoSection();
+  document.getElementById('login-screen').classList.remove('hidden');
 }
 
-function initBioAutoSection(){
-  if(!BIOMETRIC_SUPPORTED())return;
-  const accounts=loadAccounts();
-  const bioUsers=Object.values(accounts).filter(a=>a.biometricCredId);
-  const section=document.getElementById('bio-auto-section');
-  const list=document.getElementById('bio-auto-list');
-  if(bioUsers.length===0){section.style.display='none';return;}
-  section.style.display='block';
-  list.innerHTML=bioUsers.map(u=>`
-    <button class="bio-user-btn" onclick="loginWithBiometricDirect('${escHtml(u.username)}')">
-      <div class="bio-avatar ${u.role==='admin'?'admin-av':''}">${u.username[0].toUpperCase()}</div>
-      <div class="bio-info">
-        <div class="bio-name">${escHtml(u.username)}</div>
-        <div class="bio-hint">${u.role==='admin'?'👑 ADMIN':'👤 USER'} · Appuie pour scanner l'empreinte</div>
-      </div>
-      <span class="bio-finger">👆</span>
-    </button>`).join('');
+function switchTab(t){
+  document.getElementById('tab-login').classList.toggle('active',t==='login');
+  document.getElementById('tab-register').classList.toggle('active',t==='register');
+  document.getElementById('panel-login').style.display=t==='login'?'block':'none';
+  document.getElementById('panel-register').style.display=t==='register'?'block':'none';
 }
 
-function switchLoginTab(tab){
-  document.getElementById('tab-login').classList.toggle('active',tab==='login');
-  document.getElementById('tab-invite').classList.toggle('active',tab==='invite');
-  document.getElementById('panel-login').style.display=tab==='login'?'block':'none';
-  document.getElementById('panel-invite').style.display=tab==='invite'?'block':'none';
-  document.getElementById('login-error').textContent='';
-  document.getElementById('invite-error').textContent='';
+function initApp(){
+  initPIN();initPWA();buildEmojiPicker();buildColorPicker();
+  renderCatTabs();renderList();updateStats();populateCatSelect();
+  updateUserBar();applyRoleUI();checkLentReminders();
+  if(!('NDEFReader' in window))document.getElementById('nfc-unsupported').style.display='block';
+  const p=new URLSearchParams(window.location.search),uid=p.get('uid');
+  if(uid){sessionStorage.setItem('nfc_trusted','1');history.replaceState({},'',window.location.pathname);handleTagFromURL(uid.toUpperCase());}
 }
+
+// ════════════════════════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════════════════════════
+function hashPass(p){let h=5381;for(let i=0;i<p.length;i++){h=((h<<5)+h)+p.charCodeAt(i);h|=0;}return(h>>>0).toString(36);}
+function isAdmin(){return currentUser&&currentUser.role==='admin';}
 
 function doLogin(){
   const username=document.getElementById('login-username').value.trim().toLowerCase();
   const password=document.getElementById('login-password').value;
   const err=document.getElementById('login-error');
   if(!username||!password){err.textContent='Remplis tous les champs.';return;}
-  const accounts=loadAccounts();
-  // First ever login = auto-create admin
-  if(Object.keys(accounts).length===0){
-    accounts[username]={username,passwordHash:hashPass(password),role:'admin',createdAt:new Date().toISOString(),lastLogin:new Date().toISOString()};
-    saveAccounts(accounts);
-    currentUser={username,role:'admin'};
-    sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
-    document.getElementById('login-screen').classList.add('hidden');
-    initApp();showToast('👑 Compte admin créé !','success');return;
-  }
-  const acc=accounts[username];
+  const acc=cachedAccounts[username];
   if(!acc||acc.passwordHash!==hashPass(password)){err.textContent='Identifiants incorrects.';return;}
-  acc.lastLogin=new Date().toISOString();saveAccounts(accounts);
-  currentUser={username,role:acc.role};
+  loginAs(username,acc.role);
+}
+
+function doRegister(){
+  const username=document.getElementById('reg-username').value.trim().toLowerCase();
+  const password=document.getElementById('reg-password').value;
+  const password2=document.getElementById('reg-password2').value;
+  const err=document.getElementById('reg-error');
+  if(!username||!password||!password2){err.textContent='Remplis tous les champs.';return;}
+  if(username.length<3){err.textContent='Pseudo trop court (3 min).';return;}
+  if(!/^[a-z0-9_]+$/.test(username)){err.textContent='Lettres, chiffres, _ uniquement.';return;}
+  if(password.length<4){err.textContent='Mot de passe trop court (4 min).';return;}
+  if(password!==password2){err.textContent='Les mots de passe ne correspondent pas.';return;}
+  if(cachedAccounts[username]){err.textContent='Ce pseudo est déjà pris.';return;}
+  const isFirst=Object.keys(cachedAccounts).length===0;
+  const role=isFirst?'admin':'user';
+  const accounts=loadAccounts();
+  accounts[username]={username,passwordHash:hashPass(password),role,createdAt:new Date().toISOString(),lastLogin:new Date().toISOString()};
+  saveAccounts(accounts);
+  loginAs(username,role);
+  showToast(isFirst?'👑 Compte admin créé !':'✓ Compte créé !','success');
+}
+
+function loginAs(username,role){
+  currentUser={username,role};
   sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
+  const accounts=loadAccounts();
+  if(accounts[username]){accounts[username].lastLogin=new Date().toISOString();saveAccounts(accounts);}
   document.getElementById('login-screen').classList.add('hidden');
   initApp();
-}
-
-// ── INVITATION CODE SYSTEM ──
-function generateInviteCode(username,passwordHash,role){
-  const data={u:username,p:passwordHash,r:role,t:Date.now(),app:'nfc_db_v5'};
-  return btoa(JSON.stringify(data));
-}
-
-function useInviteCode(){
-  const raw=document.getElementById('invite-code-input').value.trim();
-  const err=document.getElementById('invite-error');
-  if(!raw){err.textContent='Colle un code d\'invitation.';return;}
-  try{
-    const data=JSON.parse(atob(raw));
-    if(data.app!=='nfc_db_v5'||!data.u||!data.p||!data.r) throw new Error();
-    const accounts=loadAccounts();
-    if(accounts[data.u]){
-      // Already exists — just log in
-      accounts[data.u].lastLogin=new Date().toISOString();saveAccounts(accounts);
-      currentUser={username:data.u,role:data.r};
-      sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
-      document.getElementById('login-screen').classList.add('hidden');
-      initApp();showToast('✓ Compte configuré !','success');return;
-    }
-    // Create locally
-    accounts[data.u]={username:data.u,passwordHash:data.p,role:data.r,createdAt:new Date().toISOString(),lastLogin:new Date().toISOString()};
-    saveAccounts(accounts);
-    currentUser={username:data.u,role:data.r};
-    sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
-    document.getElementById('login-screen').classList.add('hidden');
-    initApp();showToast('✓ Compte activé !','success');
-  }catch{err.textContent='Code invalide ou corrompu.';}
 }
 
 function doLogout(){
   if(!confirm('Se déconnecter ?'))return;
   sessionStorage.removeItem(SESSION_KEY);
   currentUser=null;location.reload();
-}
-
-// ════════════════════════════════════════════════════════════════
-// BIOMETRIC (WebAuthn)
-// ════════════════════════════════════════════════════════════════
-const BIOMETRIC_SUPPORTED=()=>window.PublicKeyCredential&&location.protocol==='https:';
-
-function updateBioBtn(){
-  const username=document.getElementById('login-username').value.trim().toLowerCase();
-  const accounts=loadAccounts();
-  const acc=accounts[username];
-  const wrap=document.getElementById('bio-login-wrap');
-  wrap.style.display=(acc&&acc.biometricCredId&&BIOMETRIC_SUPPORTED())?'block':'none';
-}
-
-async function registerBiometric(){
-  if(!BIOMETRIC_SUPPORTED()){showToast('⛔ Nécessite HTTPS + Chrome Android','error-t');return;}
-  if(!currentUser){return;}
-  const btn=document.getElementById('bio-register-bar-btn');
-  btn.disabled=true;btn.textContent='⏳';
-  try{
-    const challenge=crypto.getRandomValues(new Uint8Array(32));
-    const userId=new TextEncoder().encode(currentUser.username);
-    const cred=await navigator.credentials.create({publicKey:{
-      challenge,
-      rp:{name:'NFC TAG DATABASE',id:location.hostname},
-      user:{id:userId,name:currentUser.username,displayName:currentUser.username},
-      pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],
-      authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required',residentKey:'preferred'},
-      timeout:60000
-    }});
-    // Store credential ID (base64)
-    const credId=btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
-    const accounts=loadAccounts();
-    accounts[currentUser.username].biometricCredId=credId;
-    saveAccounts(accounts);
-    btn.textContent='👆✓';btn.title='Empreinte enregistrée (appuie pour rechanger)';
-    btn.style.borderColor='var(--cyan)';btn.style.color='var(--cyan)';
-    showToast('✓ Empreinte enregistrée !','success');
-  }catch(e){
-    btn.textContent='👆';btn.disabled=false;
-    if(e.name==='NotAllowedError')showToast('Annulé ou délai dépassé','');
-    else showToast('Erreur : '+e.message,'error-t');
-  }
-  btn.disabled=false;
-}
-
-async function loginWithBiometricDirect(username){
-  const accounts=loadAccounts();
-  const acc=accounts[username];
-  if(!acc?.biometricCredId)return;
-  // Animate the button
-  const btns=document.querySelectorAll('.bio-user-btn');
-  btns.forEach(b=>{if(b.onclick.toString().includes(username))b.style.borderColor='var(--cyan)';});
-  try{
-    const credId=Uint8Array.from(atob(acc.biometricCredId),c=>c.charCodeAt(0));
-    const challenge=crypto.getRandomValues(new Uint8Array(32));
-    await navigator.credentials.get({publicKey:{
-      challenge,
-      allowCredentials:[{id:credId,type:'public-key'}],
-      userVerification:'required',
-      timeout:60000
-    }});
-    acc.lastLogin=new Date().toISOString();saveAccounts(accounts);
-    currentUser={username,role:acc.role};
-    sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
-    document.getElementById('login-screen').classList.add('hidden');
-    initApp();
-    showToast('👆 Connexion par empreinte','success');
-  }catch(e){
-    document.getElementById('login-error').textContent=e.name==='NotAllowedError'?'Empreinte non reconnue.':'Erreur biométrique.';
-  }
-}
-
-async function loginWithBiometric(){
-  const username=document.getElementById('login-username').value.trim().toLowerCase();
-  const accounts=loadAccounts();
-  const acc=accounts[username];
-  if(!acc?.biometricCredId){showToast('Aucune empreinte enregistrée','error-t');return;}
-  const btn=document.getElementById('bio-login-btn');
-  btn.disabled=true;btn.innerHTML='<span style="font-size:22px;">⏳</span> VÉRIFICATION…';
-  try{
-    const credId=Uint8Array.from(atob(acc.biometricCredId),c=>c.charCodeAt(0));
-    const challenge=crypto.getRandomValues(new Uint8Array(32));
-    await navigator.credentials.get({publicKey:{
-      challenge,
-      allowCredentials:[{id:credId,type:'public-key'}],
-      userVerification:'required',
-      timeout:60000
-    }});
-    // Biometric verified by device — log in
-    acc.lastLogin=new Date().toISOString();saveAccounts(accounts);
-    currentUser={username,role:acc.role};
-    sessionStorage.setItem(SESSION_KEY,JSON.stringify(currentUser));
-    document.getElementById('login-screen').classList.add('hidden');
-    initApp();
-    showToast('👆 Connexion par empreinte','success');
-  }catch(e){
-    btn.disabled=false;btn.innerHTML='<span style="font-size:22px;">👆</span> EMPREINTE DIGITALE';
-    if(e.name==='NotAllowedError')document.getElementById('login-error').textContent='Empreinte non reconnue ou annulée.';
-    else document.getElementById('login-error').textContent='Erreur biométrique.';
-  }
-}
-
-function initApp(){
-  initTheme();initPIN();initPWA();buildEmojiPicker();buildColorPicker();
-  renderCatTabs();renderList();updateStats();populateCatSelect();checkLentReminders();
-  updateUserBar();applyRoleUI();
-  if(!('NDEFReader' in window))document.getElementById('nfc-unsupported').style.display='block';
-  const p=new URLSearchParams(window.location.search),uid=p.get('uid');
-  if(uid){sessionStorage.setItem('nfc_trusted','1');history.replaceState({},'',window.location.pathname);handleTagFromURL(uid.toUpperCase());}
 }
 
 function updateUserBar(){
@@ -1027,16 +929,13 @@ function updateUserBar(){
   const rb=document.getElementById('user-role-badge');
   rb.textContent=isAdmin()?'ADMIN':'USER';
   rb.className='user-role '+(isAdmin()?'admin':'user');
-  // Biometric button
   if(BIOMETRIC_SUPPORTED()){
-    const bioBtn=document.getElementById('bio-register-bar-btn');
-    bioBtn.style.display='inline-block';
-    const accounts=loadAccounts();
-    const hasBio=!!(accounts[currentUser.username]?.biometricCredId);
-    bioBtn.textContent=hasBio?'👆✓':'👆';
-    bioBtn.title=hasBio?'Empreinte enregistrée (cliquer pour changer)':'Enregistrer mon empreinte digitale';
-    bioBtn.style.borderColor=hasBio?'var(--cyan)':'var(--green)';
-    bioBtn.style.color=hasBio?'var(--cyan)':'var(--green)';
+    const bb=document.getElementById('bio-btn');
+    bb.style.display='inline-block';
+    const hasBio=!!(cachedAccounts[currentUser.username]?.biometricCredId);
+    bb.textContent=hasBio?'👆✓':'👆';
+    bb.style.borderColor=hasBio?'var(--cyan)':'var(--green)';
+    bb.style.color=hasBio?'var(--cyan)':'var(--green)';
   }
 }
 
@@ -1046,94 +945,109 @@ function applyRoleUI(){
   document.getElementById('toolbar-user').style.display=admin?'none':'flex';
   document.getElementById('locked-msg').style.display=admin?'none':'block';
   document.getElementById('cat-manage-btn').style.display=admin?'flex':'none';
-  // Sync theme button
   if(!admin){const tb=document.getElementById('theme-btn-u');if(tb)tb.textContent=document.body.classList.contains('light')?'🌙':'☀️';}
+}
+
+// ════════════════════════════════════════════════════════════════
+// BIOMETRIC
+// ════════════════════════════════════════════════════════════════
+const BIOMETRIC_SUPPORTED=()=>!!window.PublicKeyCredential&&location.protocol==='https:';
+
+function initBioAutoSection(){
+  if(!BIOMETRIC_SUPPORTED())return;
+  const bioUsers=Object.values(cachedAccounts).filter(a=>a.biometricCredId);
+  const sect=document.getElementById('bio-auto-section');
+  const list=document.getElementById('bio-auto-list');
+  if(!bioUsers.length){sect.style.display='none';return;}
+  sect.style.display='block';
+  list.innerHTML=bioUsers.map(u=>`
+    <button class="bio-user-btn" onclick="loginWithBiometricDirect('${escHtml(u.username)}')">
+      <div class="bio-avatar ${u.role==='admin'?'admin-av':''}">${u.username[0].toUpperCase()}</div>
+      <div class="bio-info"><div class="bio-name">${escHtml(u.username)}</div><div class="bio-hint">${u.role==='admin'?'👑 ADMIN':'👤 USER'} · Appuie pour scanner</div></div>
+      <span style="font-size:20px;">👆</span>
+    </button>`).join('');
+}
+
+async function registerBiometric(){
+  if(!BIOMETRIC_SUPPORTED()){showToast('⛔ Nécessite HTTPS + Chrome','error-t');return;}
+  const btn=document.getElementById('bio-btn');btn.disabled=true;
+  try{
+    const challenge=crypto.getRandomValues(new Uint8Array(32));
+    const cred=await navigator.credentials.create({publicKey:{
+      challenge,rp:{name:'NFC TAG DATABASE',id:location.hostname},
+      user:{id:new TextEncoder().encode(currentUser.username),name:currentUser.username,displayName:currentUser.username},
+      pubKeyCredParams:[{alg:-7,type:'public-key'},{alg:-257,type:'public-key'}],
+      authenticatorSelection:{authenticatorAttachment:'platform',userVerification:'required'},timeout:60000
+    }});
+    const credId=btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+    const accounts=loadAccounts();
+    accounts[currentUser.username].biometricCredId=credId;
+    saveAccounts(accounts);
+    updateUserBar();showToast('✓ Empreinte enregistrée !','success');
+  }catch(e){
+    if(e.name!=='NotAllowedError')showToast('Erreur bio: '+e.message,'error-t');
+  }
+  btn.disabled=false;
+}
+
+async function loginWithBiometricDirect(username){
+  const acc=cachedAccounts[username];
+  if(!acc?.biometricCredId)return;
+  try{
+    const credId=Uint8Array.from(atob(acc.biometricCredId),c=>c.charCodeAt(0));
+    await navigator.credentials.get({publicKey:{
+      challenge:crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials:[{id:credId,type:'public-key'}],
+      userVerification:'required',timeout:60000
+    }});
+    loginAs(username,acc.role);
+    showToast('👆 Connexion par empreinte','success');
+  }catch(e){
+    document.getElementById('login-error').textContent=e.name==='NotAllowedError'?'Empreinte non reconnue.':'Erreur biométrique.';
+  }
 }
 
 // ════════════════════════════════════════════════════════════════
 // USERS MODAL (admin)
 // ════════════════════════════════════════════════════════════════
-function openUsersModal(){
-  renderUsersList();
-  document.getElementById('new-user-name').value='';
-  document.getElementById('new-user-pass').value='';
-  document.getElementById('invite-code-output').style.display='none';
-  document.getElementById('users-modal').classList.add('open');
-}
+function openUsersModal(){renderUsersList();document.getElementById('users-modal').classList.add('open');}
 function closeUsersModal(){document.getElementById('users-modal').classList.remove('open');}
-
-function createUserAccount(){
-  const username=document.getElementById('new-user-name').value.trim().toLowerCase();
-  const password=document.getElementById('new-user-pass').value;
-  if(!username||!password){showToast('Remplis pseudo et mot de passe','error-t');return;}
-  if(!/^[a-z0-9_]+$/.test(username)){showToast('Pseudo: lettres, chiffres, _ uniquement','error-t');return;}
-  const accounts=loadAccounts();
-  // Create or update account
-  const ph=hashPass(password);
-  const role='user';
-  accounts[username]={username,passwordHash:ph,role,createdAt:new Date().toISOString(),lastLogin:null};
-  saveAccounts(accounts);
-  // Generate invite code
-  const code=generateInviteCode(username,ph,role);
-  document.getElementById('invite-code-text').value=code;
-  document.getElementById('invite-code-output').style.display='block';
-  renderUsersList();
-  document.getElementById('new-user-name').value='';
-  document.getElementById('new-user-pass').value='';
-  showToast(`✓ Compte "${username}" créé`,'success');
-}
-
-function copyInviteCode(){
-  const txt=document.getElementById('invite-code-text').value;
-  navigator.clipboard.writeText(txt).then(()=>showToast('✓ Code copié !','success')).catch(()=>{
-    document.getElementById('invite-code-text').select();document.execCommand('copy');showToast('✓ Code copié !','success');
-  });
-}
 function renderUsersList(){
   const accounts=loadAccounts();
-  const keys=Object.keys(accounts);
   const list=document.getElementById('users-list');
-  list.innerHTML=keys.map(u=>{
+  list.innerHTML=Object.keys(accounts).map(u=>{
     const acc=accounts[u];
     const isSelf=u===currentUser.username;
     const isAcc=acc.role==='admin';
-    const lastLogin=acc.lastLogin?new Date(acc.lastLogin).toLocaleDateString('fr-FR'):'jamais';
+    const db=loadDB();
+    const shared=Object.values(db).filter(t=>(t.sharedWith||[]).includes(u)).length;
     return `<div class="user-item">
       <div class="user-item-avatar ${acc.role}">${u[0].toUpperCase()}</div>
       <div class="user-item-info">
         <div class="user-item-name">${escHtml(u)}${isSelf?' <span style="color:var(--cyan);font-size:9px;">(toi)</span>':''}</div>
-        <div class="user-item-meta">${isAcc?'👑 Admin':'👤 Utilisateur'} · ${acc.biometricCredId?'👆 Bio':'🔑 Pass'} · Dernière connexion : ${lastLogin}</div>
+        <div class="user-item-meta">${isAcc?'👑 Admin':'👤 User'} · ${shared} tag(s) partagé(s) · ${acc.biometricCredId?'👆':'🔑'}</div>
       </div>
       <div class="user-item-actions">
         ${!isSelf&&!isAcc?`<button class="u-btn promote" onclick="promoteUser('${u}')">↑ ADMIN</button>`:''}
         ${isAcc&&!isSelf?`<button class="u-btn" onclick="demoteUser('${u}')">↓ USER</button>`:''}
-        ${!isSelf?`<button class="u-btn" onclick="regenCode('${u}')" title="Nouveau code d'invitation">🔑</button>`:''}
         ${!isSelf?`<button class="u-btn danger" onclick="deleteUser('${u}')">✕</button>`:''}
       </div>
     </div>`;
   }).join('')||'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:8px;">Aucun compte.</div>';
 }
-function regenCode(u){
-  const accounts=loadAccounts();if(!accounts[u])return;
-  const code=generateInviteCode(u,accounts[u].passwordHash,accounts[u].role);
-  document.getElementById('invite-code-text').value=code;
-  document.getElementById('invite-code-output').style.display='block';
-  document.getElementById('invite-code-output').scrollIntoView({behavior:'smooth'});
-  showToast(`🔑 Code régénéré pour ${u}`,'success');
-}
 function promoteUser(u){
-  const accounts=loadAccounts();if(!accounts[u])return;
-  accounts[u].role='admin';saveAccounts(accounts);renderUsersList();showToast(`👑 ${u} est maintenant admin`,'success');
+  const a=loadAccounts();if(!a[u])return;
+  a[u].role='admin';saveAccounts(a);showToast(`👑 ${u} est maintenant admin — synchronisation en cours…`,'success');
 }
 function demoteUser(u){
-  const accounts=loadAccounts();if(!accounts[u])return;
-  if(!confirm(`Rétrograder ${u} en utilisateur ?`))return;
-  accounts[u].role='user';saveAccounts(accounts);renderUsersList();showToast(`${u} rétrogradé`,'');
+  const a=loadAccounts();if(!a[u])return;
+  if(!confirm(`Rétrograder ${u} ?`))return;
+  a[u].role='user';saveAccounts(a);showToast(`${u} rétrogradé — synchronisation en cours…`,'');
 }
 function deleteUser(u){
-  const accounts=loadAccounts();if(!accounts[u])return;
-  if(!confirm(`Supprimer le compte "${u}" ?`))return;
-  delete accounts[u];saveAccounts(accounts);renderUsersList();showToast(`🗑 Compte ${u} supprimé`,'error-t');
+  const a=loadAccounts();if(!a[u])return;
+  if(!confirm(`Supprimer "${u}" ?`))return;
+  delete a[u];saveAccounts(a);showToast(`🗑 ${u} supprimé`,'error-t');
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1142,34 +1056,30 @@ function deleteUser(u){
 function initPWA(){
   const m={name:'NFC TAG DATABASE',short_name:'NFC DB',start_url:window.location.pathname,display:'standalone',background_color:'#060b10',theme_color:'#00e5ff'};
   document.getElementById('manifest-link').href=URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/manifest+json'}));
-  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('install-btn').classList.add('visible');});
-  window.addEventListener('appinstalled',()=>{document.getElementById('install-btn').classList.remove('visible');showToast('✓ App installée!','success');});
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;});
 }
-async function installPWA(){if(!deferredPrompt)return;deferredPrompt.prompt();const r=await deferredPrompt.userChoice;if(r.outcome==='accepted')deferredPrompt=null;}
 
 // ════════════════════════════════════════════════════════════════
-// NFC SCANNING
+// NFC
 // ════════════════════════════════════════════════════════════════
 function handleTagFromURL(uid){
   const db=loadDB(),stats=loadStats();
-  stats.totalScans=(stats.totalScans||0)+1;saveStats(stats);updateStats();
+  stats.totalScans=(stats.totalScans||0)+1;saveStats(stats);
   if(db[uid]){
     db[uid].lastSeen=new Date().toISOString();db[uid].scanCount=(db[uid].scanCount||0)+1;
-    saveDB(db);renderList();addToHistory(uid,db[uid]);pingWebhook(db[uid]);
+    saveDB(db);addToHistory(uid,db[uid]);pingWebhook(db[uid]);
     const s=db[uid].status||'available';
-    if(s==='lent'||s==='lost'){setStatus('active',`⚠ Tag ${s==='lent'?'prêté':'perdu'} : ${db[uid].name}`);openReturnModal(uid);}
+    if(s==='lent'||s==='lost'){setStatus('active',`⚠ ${s==='lent'?'Prêté':'Perdu'} : ${db[uid].name}`);openReturnModal(uid);}
     else{setStatus('active',`✓ Tag reconnu : ${db[uid].name}`);openScanActionModal(uid);}
   }else{
     setStatus('active',`◈ Nouveau tag : ${uid}`);
     if(isAdmin())openRegisterModal(uid,false,false);
-    else{setStatus('active','⛔ Seul l\'admin peut enregistrer un tag.');showToast('⛔ Action réservée à l\'admin','error-t');}
+    else showToast('⛔ Seul l\'admin peut enregistrer un tag','error-t');
   }
 }
+
 async function toggleScan(){
-  if(!('NDEFReader' in window)){
-    if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
-    openRegisterModal(genUID(),true,false);return;
-  }
+  if(!('NDEFReader' in window)){if(!isAdmin()){showToast('⛔ Action admin uniquement','error-t');return;}openRegisterModal(genUID(),true,false);return;}
   if(isScanning){stopScan();return;}
   try{
     nfcReader=new NDEFReader();await nfcReader.scan();
@@ -1181,16 +1091,16 @@ async function toggleScan(){
 function stopScan(){isScanning=false;setScanUI(false);setStatus('','Scan arrêté.');nfcReader=null;}
 function handleTagScan(uid){
   const db=loadDB(),stats=loadStats();
-  stats.totalScans=(stats.totalScans||0)+1;saveStats(stats);updateStats();
+  stats.totalScans=(stats.totalScans||0)+1;saveStats(stats);
   if(db[uid]){
     db[uid].lastSeen=new Date().toISOString();db[uid].scanCount=(db[uid].scanCount||0)+1;
-    saveDB(db);renderList();addToHistory(uid,db[uid]);pingWebhook(db[uid]);
+    saveDB(db);addToHistory(uid,db[uid]);pingWebhook(db[uid]);
     const s=db[uid].status||'available';
     if(s==='lent'||s==='lost'){setStatus('active',`⚠ ${s==='lent'?'Prêté':'Perdu'} : ${db[uid].name}`);openReturnModal(uid);}
     else{setStatus('active',`✓ ${db[uid].name}`);openScanActionModal(uid);}
   }else{
-    if(!isAdmin()){setStatus('active','⛔ Tag inconnu. Seul l\'admin peut enregistrer.');showToast('⛔ Action réservée à l\'admin','error-t');return;}
-    setStatus('active',`◈ Nouveau tag : ${uid}`);pendingWriteUID=uid;openRegisterModal(uid,false,true);
+    if(!isAdmin()){setStatus('active','⛔ Tag inconnu.');showToast('⛔ Action admin uniquement','error-t');return;}
+    setStatus('active',`◈ Nouveau : ${uid}`);pendingWriteUID=uid;openRegisterModal(uid,false,true);
   }
 }
 
@@ -1204,45 +1114,37 @@ function openScanActionModal(uid){
   document.getElementById('sa-uid').textContent='UID : '+uid;
   document.getElementById('sa-borrower-wrap').style.display='none';
   document.getElementById('sa-borrower').value='';
-  // Hide action buttons for non-admin
-  const showActions=isAdmin();
-  document.getElementById('sa-lent-btn').style.display=showActions?'block':'none';
-  document.getElementById('sa-lost-btn').style.display=showActions?'block':'none';
+  document.getElementById('sa-lent-btn').style.display=isAdmin()?'block':'none';
+  document.getElementById('sa-lost-btn').style.display=isAdmin()?'block':'none';
   document.getElementById('scan-action-modal').classList.add('open');
 }
 function closeScanAction(){document.getElementById('scan-action-modal').classList.remove('open');scanActionUID=null;}
 function viewDetailsFromScan(){const uid=scanActionUID;closeScanAction();openDetailModal(uid);}
 function openLentFromScan(){document.getElementById('sa-borrower-wrap').style.display='block';setTimeout(()=>document.getElementById('sa-borrower').focus(),100);}
 function confirmLentFromScan(){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
+  if(!isAdmin())return;
   const db=loadDB(),uid=scanActionUID;if(!db[uid])return;
   const borrower=document.getElementById('sa-borrower').value.trim();
   const now=new Date().toISOString();
   db[uid].status='lent';db[uid].borrower=borrower;db[uid].updatedAt=now;
-  if(!db[uid].changelog)db[uid].changelog=[];
-  db[uid].changelog.unshift({action:'Prêté',detail:borrower?`Prêté à ${borrower}`:'Prêt enregistré',date:now});
-  if(db[uid].changelog.length>20)db[uid].changelog.splice(20);
-  saveDB(db);renderList();updateStats();closeScanAction();
-  showToast(`🟡 Marqué comme prêté${borrower?' à '+borrower:''}`, 'success');highlightCard(uid);
+  addChangelog(db,uid,'Prêté',borrower?`À ${borrower}`:'Prêt enregistré',now);
+  saveDB(db);closeScanAction();showToast(`🟡 Prêté${borrower?' à '+borrower:''}`, 'success');
 }
 function markLostFromScan(){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
+  if(!isAdmin())return;
   const db=loadDB(),uid=scanActionUID;if(!db[uid])return;
   if(!confirm(`Marquer "${db[uid].name}" comme perdu ?`))return;
   const now=new Date().toISOString();
   db[uid].status='lost';db[uid].borrower='';db[uid].updatedAt=now;
-  if(!db[uid].changelog)db[uid].changelog=[];
-  db[uid].changelog.unshift({action:'Perdu',detail:'Marqué comme perdu',date:now});
-  if(db[uid].changelog.length>20)db[uid].changelog.splice(20);
-  saveDB(db);renderList();updateStats();closeScanAction();
-  showToast('🔴 Marqué comme perdu','error-t');highlightCard(uid);
+  addChangelog(db,uid,'Perdu','Marqué comme perdu',now);
+  saveDB(db);closeScanAction();showToast('🔴 Marqué comme perdu','error-t');
 }
 
 // ════════════════════════════════════════════════════════════════
-// REGISTER / EDIT MODAL
+// REGISTER / EDIT
 // ════════════════════════════════════════════════════════════════
 function openRegisterModal(uid,manual,willWrite){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
+  if(!isAdmin()){showToast('⛔ Action admin uniquement','error-t');return;}
   currentUID=uid;editUID=null;pendingWriteUID=willWrite?uid:null;
   currentPhoto=null;selectedStatus='available';selectedEmoji='📦';
   document.getElementById('modal-badge').textContent=manual?'AJOUT MANUEL':'NOUVEAU TAG';
@@ -1261,10 +1163,7 @@ function openRegisterModal(uid,manual,willWrite){
   document.getElementById('register-modal').classList.add('open');
   setTimeout(()=>document.getElementById('tag-name-input').focus(),100);
 }
-function openEditModal(uid){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
-  requirePIN(()=>_openEditModal(uid));
-}
+function openEditModal(uid){if(!isAdmin()){showToast('⛔ Action admin uniquement','error-t');return;}requirePIN(()=>_openEditModal(uid));}
 function _openEditModal(uid){
   const db=loadDB(),tag=db[uid];if(!tag)return;
   currentUID=uid;editUID=uid;pendingWriteUID=null;
@@ -1288,7 +1187,7 @@ function _openEditModal(uid){
 function closeModal(){document.getElementById('register-modal').classList.remove('open');currentUID=null;editUID=null;pendingWriteUID=null;}
 
 async function saveTag(){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
+  if(!isAdmin()){showToast('⛔ Action admin uniquement','error-t');return;}
   const name=document.getElementById('tag-name-input').value.trim();
   if(!name){flashInput('tag-name-input');return;}
   const uid=currentUID,isEdit=!!editUID,db=loadDB();
@@ -1299,11 +1198,9 @@ async function saveTag(){
   if(isEdit){
     const old=db[uid],changes=[];
     if(old.name!==name)changes.push(`Nom: "${old.name}"→"${name}"`);
-    if(old.status!==selectedStatus)changes.push(`Statut: ${SL[old.status||'available']}→${SL[selectedStatus]}`);
+    if(old.status!==selectedStatus)changes.push(`Statut→${SL[selectedStatus]}`);
     if(selectedStatus==='lent'&&borrower)changes.push(`Prêté à: ${borrower}`);
-    if(!db[uid].changelog)db[uid].changelog=[];
-    db[uid].changelog.unshift({action:'Modification',detail:changes.join(' | ')||'Mise à jour',date:now,by:currentUser.username});
-    if(db[uid].changelog.length>20)db[uid].changelog.splice(20);
+    addChangelog(db,uid,'Modification',changes.join(' | ')||'Mise à jour',now);
     Object.assign(db[uid],{name,emoji:selectedEmoji,category:catId,notes,photo:currentPhoto,status:selectedStatus,borrower,updatedAt:now});
   }else{
     db[uid]={name,emoji:selectedEmoji,uid,category:catId,notes,photo:currentPhoto,status:selectedStatus,borrower,
@@ -1319,58 +1216,25 @@ async function saveTag(){
       const writer=new NDEFReader();
       await writer.write({records:[{recordType:'url',data:tagURL},{recordType:'android.com:pkg',data:new TextEncoder().encode('com.android.chrome')}]});
       db[uid].written=true;ws.className='write-status visible done';ws.textContent='✓ Lien écrit!';
-      saveDB(db);renderList();updateStats();renderCatTabs();
-      setTimeout(()=>{closeModal();showToast('✓ Tag enregistré + lien écrit!','success');highlightCard(uid);},1200);
+      saveDB(db);setTimeout(()=>{closeModal();showToast('✓ Tag enregistré + lien écrit!','success');},1200);
     }catch{
       ws.className='write-status visible fail';ws.textContent='✕ Écriture NFC échouée.';
-      saveDB(db);renderList();updateStats();renderCatTabs();
-      document.getElementById('save-btn').disabled=false;
-      setTimeout(()=>{closeModal();showToast('Tag enregistré (écriture NFC échouée)','');highlightCard(uid);},2000);
+      saveDB(db);document.getElementById('save-btn').disabled=false;
+      setTimeout(()=>{closeModal();showToast('Tag enregistré (écriture NFC échouée)','');},2000);
     }
-  }else{saveDB(db);renderList();updateStats();renderCatTabs();closeModal();showToast(isEdit?'✓ Tag modifié':'✓ Tag enregistré','success');highlightCard(uid);}
+  }else{saveDB(db);closeModal();showToast(isEdit?'✓ Modifié':'✓ Enregistré','success');}
+}
+
+function addChangelog(db,uid,action,detail,date){
+  if(!db[uid])return;
+  if(!db[uid].changelog)db[uid].changelog=[];
+  db[uid].changelog.unshift({action,detail,date,by:currentUser?.username||'?'});
+  if(db[uid].changelog.length>20)db[uid].changelog.splice(20);
 }
 
 // ════════════════════════════════════════════════════════════════
 // DETAIL MODAL
 // ════════════════════════════════════════════════════════════════
-// ════════════════════════════════════════════════════════════════
-// SHARE MODAL
-// ════════════════════════════════════════════════════════════════
-let shareUID=null;
-function openShareModal(uid){
-  if(!isAdmin())return;
-  shareUID=uid;
-  const db=loadDB(),tag=db[uid];if(!tag)return;
-  document.getElementById('share-title').textContent=(tag.emoji||'📦')+' '+tag.name;
-  const accounts=loadAccounts();
-  const shared=tag.sharedWith||[];
-  // List all non-admin users
-  const users=Object.values(accounts).filter(a=>a.role!=='admin');
-  if(users.length===0){
-    document.getElementById('share-users-list').innerHTML='<div style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:10px 0;">Aucun utilisateur enregistré.</div>';
-  } else {
-    document.getElementById('share-users-list').innerHTML=users.map(u=>`
-      <div class="share-user-row">
-        <input type="checkbox" class="share-checkbox" id="sc-${u.username}" ${shared.includes(u.username)?'checked':''}>
-        <label class="share-user-name" for="sc-${u.username}">${escHtml(u.username)}</label>
-        <span class="share-user-role">USER</span>
-      </div>`).join('');
-  }
-  document.getElementById('share-modal').classList.add('open');
-}
-function closeShareModal(){document.getElementById('share-modal').classList.remove('open');shareUID=null;}
-function saveShare(){
-  const db=loadDB();if(!db[shareUID])return;
-  const accounts=loadAccounts();
-  const users=Object.values(accounts).filter(a=>a.role!=='admin');
-  const newShared=users.filter(u=>document.getElementById('sc-'+u.username)?.checked).map(u=>u.username);
-  db[shareUID].sharedWith=newShared;
-  if(!db[shareUID].changelog)db[shareUID].changelog=[];
-  db[shareUID].changelog.unshift({action:'Partage mis à jour',detail:newShared.length>0?`Partagé avec : ${newShared.join(', ')}`:'Non partagé',date:new Date().toISOString(),by:currentUser.username});
-  saveDB(db);closeShareModal();renderList();
-  showToast(newShared.length>0?`✓ Partagé avec ${newShared.length} utilisateur(s)`:'Partage retiré','success');
-}
-
 function openDetailModal(uid){
   const db=loadDB(),tag=db[uid];if(!tag)return;
   detailUID=uid;
@@ -1384,30 +1248,24 @@ function openDetailModal(uid){
   const ne=document.getElementById('detail-notes');
   if(tag.notes){ne.textContent=tag.notes;ne.style.display='block';}else ne.style.display='none';
   const lentDays=tag.status==='lent'?Math.floor((Date.now()-new Date(tag.updatedAt||tag.createdAt))/(864e5)):null;
-  const sharedStr=(tag.sharedWith&&tag.sharedWith.length>0)?tag.sharedWith.join(', '):'Non partagé';
+  const sharedStr=isAdmin()?(tag.sharedWith&&tag.sharedWith.length?tag.sharedWith.join(', '):'Non partagé'):null;
   const rows=[['UID',uid],['CATÉGORIE',cat?cat.name:'—'],['LIEN NFC',tag.written?'✓ Écrit':'✕ Non'],
-    ...(lentDays!==null?[['PRÊTÉ DEPUIS',lentDays+' jour(s)']]:[] ),
+    ...(lentDays!==null?[['PRÊTÉ DEPUIS',lentDays+' j']]:[] ),
     ['ENREGISTRÉ',formatDate(tag.createdAt)],['DERNIER SCAN',formatDate(tag.lastSeen)],
     ['NB. SCANS',tag.scanCount||1],
-    ...(isAdmin()?[['PARTAGÉ AVEC',sharedStr]]:[] ),
+    ...(sharedStr!==null?[['PARTAGÉ AVEC',sharedStr]]:[]),
     ['FAVORI',tag.pinned?'⭐ Oui':'Non'],['ARCHIVÉ',tag.archived?'📦 Oui':'Non']];
   document.getElementById('detail-rows').innerHTML=rows.map(([k,v])=>`<div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${escHtml(String(v))}</span></div>`).join('');
   const cl=tag.changelog||[];
   document.getElementById('detail-changelog').innerHTML=cl.length===0
     ?'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);padding:6px 0;">Aucune modification.</div>'
     :cl.map(c=>`<div class="cl-item"><div class="cl-action">${escHtml(c.action)}${c.by?' <span style="color:var(--muted);font-size:9px;">par '+escHtml(c.by)+'</span>':''}</div><div class="cl-detail">${escHtml(c.detail||'')}</div><div class="cl-date">${formatDate(c.date)}</div></div>`).join('');
-  // Show/hide edit button based on role
   document.getElementById('detail-edit-btn').style.display=isAdmin()?'block':'none';
-  // Show share button for admin
-  const shareBtn=document.getElementById('detail-share-btn');
-  if(shareBtn) shareBtn.style.display=isAdmin()?'block':'none';
+  document.getElementById('detail-share-btn').style.display=isAdmin()?'block':'none';
   document.getElementById('detail-modal').classList.add('open');
 }
 function closeDetailModal(){document.getElementById('detail-modal').classList.remove('open');detailUID=null;}
-function editFromDetail(){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
-  const u=detailUID;closeDetailModal();_openEditModal(u);
-}
+function editFromDetail(){if(!isAdmin())return;const u=detailUID;closeDetailModal();_openEditModal(u);}
 
 // ════════════════════════════════════════════════════════════════
 // RETURN MODAL
@@ -1421,55 +1279,79 @@ function openReturnModal(uid){
   const b=document.getElementById('return-banner');b.className='detail-banner '+tag.status;
   b.textContent=il?('🟡 PRÊTÉ À '+(tag.borrower||'—').toUpperCase()):'🔴 PERDU';
   document.getElementById('return-msg').innerHTML=il
-    ?`L'objet <strong>${escHtml(tag.name)}</strong> était prêté${tag.borrower?' à <strong>'+escHtml(tag.borrower)+'</strong>':''}.`
-    :`L'objet <strong>${escHtml(tag.name)}</strong> était marqué perdu.`;
-  // Only admin can mark as available
+    ?`<strong>${escHtml(tag.name)}</strong> prêté${tag.borrower?' à <strong>'+escHtml(tag.borrower)+'</strong>':''}.`
+    :`<strong>${escHtml(tag.name)}</strong> était marqué perdu.`;
   document.getElementById('return-actions').innerHTML=isAdmin()
-    ?`<button class="bs" onclick="closeReturnModal()">LAISSER TEL QUEL</button><button class="bp" style="background:var(--green);" onclick="markAsAvailable()">✓ MARQUER DISPO</button>`
+    ?`<button class="bs" onclick="closeReturnModal()">LAISSER</button><button class="bp" style="background:var(--green);" onclick="markAsAvailable()">✓ DISPO</button>`
     :`<button class="bs" style="grid-column:1/-1;" onclick="closeReturnModal()">FERMER</button>`;
   document.getElementById('return-modal').classList.add('open');
 }
 function closeReturnModal(){document.getElementById('return-modal').classList.remove('open');openDetailModal(detailUID);}
 function markAsAvailable(){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
+  if(!isAdmin())return;
   const db=loadDB(),uid=detailUID;if(!db[uid])return;
   const old=db[uid].status;
   db[uid].status='available';db[uid].borrower='';db[uid].returnedAt=new Date().toISOString();
-  if(!db[uid].changelog)db[uid].changelog=[];
-  db[uid].changelog.unshift({action:'Retour',detail:`"${SL[old]}"→Disponible`,date:new Date().toISOString(),by:currentUser.username});
-  saveDB(db);renderList();updateStats();
-  document.getElementById('return-modal').classList.remove('open');
-  showToast('✓ Remis en disponible','success');highlightCard(uid);
+  addChangelog(db,uid,'Retour',`"${SL[old]}"→Disponible`,new Date().toISOString());
+  saveDB(db);document.getElementById('return-modal').classList.remove('open');
+  showToast('✓ Remis en disponible','success');
 }
 
 // ════════════════════════════════════════════════════════════════
-// FAVORITE & ARCHIVE & DELETE (admin only)
+// SHARE MODAL — TEMPS RÉEL
+// ════════════════════════════════════════════════════════════════
+function openShareModal(uid){
+  if(!isAdmin())return;
+  shareUID=uid;
+  const db=loadDB(),tag=db[uid];if(!tag)return;
+  document.getElementById('share-title').textContent=(tag.emoji||'📦')+' '+tag.name;
+  const accounts=loadAccounts();
+  const shared=tag.sharedWith||[];
+  const users=Object.values(accounts).filter(a=>a.role!=='admin');
+  document.getElementById('share-users-list').innerHTML=users.length===0
+    ?'<div style="font-family:var(--mono);font-size:10px;color:var(--muted);">Aucun utilisateur.</div>'
+    :users.map(u=>`<div class="share-user-row">
+        <input type="checkbox" class="share-checkbox" id="sc-${u.username}" ${shared.includes(u.username)?'checked':''}>
+        <label class="share-user-name" for="sc-${u.username}">${escHtml(u.username)}</label>
+        <span class="share-user-role">USER</span>
+      </div>`).join('');
+  document.getElementById('share-modal').classList.add('open');
+}
+function closeShareModal(){document.getElementById('share-modal').classList.remove('open');shareUID=null;}
+function saveShare(){
+  const db=loadDB();if(!db[shareUID])return;
+  const accounts=loadAccounts();
+  const users=Object.values(accounts).filter(a=>a.role!=='admin');
+  const newShared=users.filter(u=>document.getElementById('sc-'+u.username)?.checked).map(u=>u.username);
+  db[shareUID].sharedWith=newShared;
+  addChangelog(db,shareUID,'Partage',newShared.length?`Avec : ${newShared.join(', ')}`:'Retiré',new Date().toISOString());
+  saveDB(db);closeShareModal();
+  showToast(newShared.length?`✓ Partagé en temps réel avec ${newShared.length} utilisateur(s) !`:'Partage retiré','success');
+}
+
+// ════════════════════════════════════════════════════════════════
+// FAVORITE / ARCHIVE / DELETE
 // ════════════════════════════════════════════════════════════════
 function togglePin(uid){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
+  if(!isAdmin())return;
   requirePIN(()=>{
     const db=loadDB();if(!db[uid])return;db[uid].pinned=!db[uid].pinned;
-    if(!db[uid].changelog)db[uid].changelog=[];
-    db[uid].changelog.unshift({action:db[uid].pinned?'Ajouté favoris':'Retiré favoris',detail:'',date:new Date().toISOString(),by:currentUser.username});
-    saveDB(db);renderList();showToast(db[uid].pinned?'⭐ Favori ajouté':'Retiré des favoris','');
+    addChangelog(db,uid,db[uid].pinned?'Favori ajouté':'Favori retiré','',new Date().toISOString());
+    saveDB(db);showToast(db[uid].pinned?'⭐ Favori ajouté':'Retiré des favoris','');
   });
 }
 function toggleArchive(uid){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
+  if(!isAdmin())return;
   requirePIN(()=>{
     const db=loadDB();if(!db[uid])return;db[uid].archived=!db[uid].archived;
-    if(!db[uid].changelog)db[uid].changelog=[];
-    db[uid].changelog.unshift({action:db[uid].archived?'Archivé':'Désarchivé',detail:'',date:new Date().toISOString(),by:currentUser.username});
-    saveDB(db);renderList();updateStats();showToast(db[uid].archived?'📦 Archivé':'Désarchivé','');
+    addChangelog(db,uid,db[uid].archived?'Archivé':'Désarchivé','',new Date().toISOString());
+    saveDB(db);showToast(db[uid].archived?'📦 Archivé':'Désarchivé','');
   });
 }
-function deleteTag(uid){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
-  requirePIN(()=>_deleteTag(uid));
-}
+function deleteTag(uid){if(!isAdmin())return;requirePIN(()=>_deleteTag(uid));}
 function _deleteTag(uid){
   const db=loadDB();if(!confirm(`Supprimer "${db[uid]?.name||uid}" ?`))return;
-  delete db[uid];saveDB(db);renderList();updateStats();renderCatTabs();showToast('🗑 Supprimé','error-t');
+  delete db[uid];saveDB(db);showToast('🗑 Supprimé','error-t');
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1480,13 +1362,13 @@ function renderList(filter=''){
   const sortVal=document.getElementById('sort-select')?.value||'date_desc';
   const list=document.getElementById('tag-list');
   let keys=Object.keys(db);
-  // Non-admin : only see tags shared with them
-  if(!isAdmin()) keys=keys.filter(u=>(db[u].sharedWith||[]).includes(currentUser.username));
+  if(!isAdmin()) keys=keys.filter(u=>(db[u].sharedWith||[]).includes(currentUser?.username));
   if(activeCatFilter!=='all')keys=keys.filter(u=>db[u].category===activeCatFilter);
   if(activeSF==='pinned')keys=keys.filter(u=>db[u].pinned);
   else if(activeSF==='archived')keys=keys.filter(u=>db[u].archived);
   else{keys=keys.filter(u=>!db[u].archived);if(activeSF!=='all')keys=keys.filter(u=>(db[u].status||'available')===activeSF);}
-  if(filter)keys=keys.filter(u=>db[u].name.toLowerCase().includes(filter.toLowerCase())||u.toLowerCase().includes(filter.toLowerCase()));
+  const f=filter||document.getElementById('search-input')?.value||'';
+  if(f)keys=keys.filter(u=>db[u].name.toLowerCase().includes(f.toLowerCase())||u.toLowerCase().includes(f.toLowerCase()));
   keys.sort((a,b)=>{
     const ta=db[a],tb=db[b];
     if(sortVal==='date_desc')return new Date(tb.createdAt)-new Date(ta.createdAt);
@@ -1498,7 +1380,7 @@ function renderList(filter=''){
     return 0;
   });
   if(activeSF!=='pinned'&&activeSF!=='archived')keys.sort((a,b)=>(db[b].pinned?1:0)-(db[a].pinned?1:0));
-  if(keys.length===0){list.innerHTML=`<div class="empty-state"><div class="empty-icon">📡</div>AUCUN TAG<br><br>${isAdmin()?'Scannez un tag pour commencer.':'Aucun tag enregistré.'}</div>`;return;}
+  if(keys.length===0){list.innerHTML=`<div class="empty-state"><div class="empty-icon">📡</div>AUCUN TAG<br><br>${isAdmin()?'Scannez un tag pour commencer.':'Aucun tag partagé avec toi.'}</div>`;return;}
   list.className=isGridView?'grid-view':'';
   const now=Date.now();
   list.innerHTML=keys.map(uid=>{
@@ -1516,23 +1398,22 @@ function renderList(filter=''){
     const bgStyle=cat&&cat.bgImage?`style="background-image:url('${cat.bgImage}')"`:'' ;
     const cc=`tag-card${isGridView?' gc':''}${t.pinned?' pinned':''}${t.archived?' archived':''}`;
     const cardClick=(t.status||'available')==='available'?`onclick="openScanActionModal('${uid}')" style="cursor:pointer"`:'';
-    // Admin-only action buttons
     const adminBtns=isAdmin()?`
-      <button class="btn-more" title="Actions" onclick="event.stopPropagation();toggleDropdown('dd-${uid}',this)">···</button>
+      <button class="btn-more" onclick="event.stopPropagation();toggleDropdown('dd-${uid}',this)">···</button>
       <div class="tag-dropdown" id="dd-${uid}">
-        <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openDetailModal('${uid}')">👁&nbsp; Voir les détails</button>
+        <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openDetailModal('${uid}')">👁&nbsp; Voir détails</button>
         <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openScanActionModal('${uid}')">⚡&nbsp; Action rapide</button>
         <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openQRModal('${uid}')">⬛&nbsp; QR Code</button>
         <div class="dd-sep"></div>
         <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openEditModal('${uid}')">✏️&nbsp; Modifier</button>
         <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();openShareModal('${uid}')">👥&nbsp; Partager avec…</button>
-        <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();togglePin('${uid}')">⭐&nbsp; ${t.pinned?'Retirer des favoris':'Ajouter aux favoris'}</button>
+        <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();togglePin('${uid}')">⭐&nbsp; ${t.pinned?'Retirer favori':'Ajouter favori'}</button>
         <button class="dd-item" onclick="event.stopPropagation();closeAllDropdowns();toggleArchive('${uid}')">📦&nbsp; ${t.archived?'Désarchiver':'Archiver'}</button>
         <div class="dd-sep"></div>
         <button class="dd-item danger" onclick="event.stopPropagation();closeAllDropdowns();deleteTag('${uid}')">🗑&nbsp; Supprimer</button>
       </div>`:
-      `<button class="btn-icon" title="Voir" onclick="event.stopPropagation();openDetailModal('${uid}')">👁</button>
-       <button class="btn-icon" title="QR" onclick="event.stopPropagation();openQRModal('${uid}')">⬛</button>`;
+      `<button class="btn-icon" onclick="event.stopPropagation();openDetailModal('${uid}')">👁</button>
+       <button class="btn-icon" onclick="event.stopPropagation();openQRModal('${uid}')">⬛</button>`;
     return `<div class="${cc}" data-uid="${uid}" data-status="${t.status||'available'}" ${cardClick}>
       ${cat&&cat.bgImage?`<div class="tag-card-bg" ${bgStyle}></div>`:''}
       ${imgEl}
@@ -1541,23 +1422,19 @@ function renderList(filter=''){
         <div class="tag-uid">${uid}</div>
         <div class="tag-meta">${cb}${wb}${ls}${us}</div>
       </div>
-      <div class="tag-actions">
-        ${isAdmin() ? adminBtns : `
-          <button class="btn-icon" title="Voir" onclick="event.stopPropagation();openDetailModal('${uid}')">👁</button>
-          <button class="btn-icon" title="QR" onclick="event.stopPropagation();openQRModal('${uid}')">⬛</button>
-        `}
-      </div>
+      <div class="tag-actions">${adminBtns}</div>
     </div>`;
   }).join('');
 }
+
 function filterTags(){renderList(document.getElementById('search-input').value);}
 function updateStats(){
   const db=loadDB(),keys=Object.keys(db).filter(u=>!db[u].archived);
   document.getElementById('stat-total').textContent=keys.length;
   document.getElementById('stat-lent').textContent=keys.filter(u=>db[u].status==='lent').length;
-  document.getElementById('stat-scanned').textContent=loadStats().totalScans||0;
+  document.getElementById('stat-scanned').textContent=cachedStats.totalScans||0;
 }
-function toggleView(){isGridView=!isGridView;document.getElementById('view-btn').textContent=isGridView?'☰':'▤';renderList(document.getElementById('search-input').value);}
+function toggleView(){isGridView=!isGridView;document.getElementById('view-btn').textContent=isGridView?'☰':'▤';filterTags();}
 function setSF(v){activeSF=v;document.querySelectorAll('[data-sf]').forEach(b=>b.classList.toggle('active',b.dataset.sf===v));filterTags();}
 function renderCatTabs(){
   const db=loadDB(),cats=loadCats();
@@ -1572,7 +1449,7 @@ function renderCatTabs(){
 }
 
 // ════════════════════════════════════════════════════════════════
-// SUMMARY, HISTORY, QR, CATEGORIES, SETTINGS, WEBHOOK
+// SUMMARY
 // ════════════════════════════════════════════════════════════════
 function openSummaryModal(){
   const db=loadDB(),keys=Object.keys(db),settings=loadSettings();
@@ -1587,7 +1464,7 @@ function openSummaryModal(){
     ['PRÊTÉS',lent,'var(--orange)'],['PERDUS',lost,'var(--red)'],
     ['FAVORIS ⭐',pins,'var(--yellow)'],['ARCHIVÉS',arch,'var(--muted)'],
   ].map(([l,v,c])=>`<div class="summary-card"><div class="summary-val" style="color:${c}">${v}</div><div class="summary-lbl">${l}</div></div>`).join('');
-  const h=loadHistory();const days=[],labels=[];
+  const h=cachedHistory;const days=[],labels=[];
   for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(h.filter(e=>new Date(e.scannedAt).toDateString()===d.toDateString()).length);labels.push(['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'][d.getDay()]);}
   const canvas=document.getElementById('scan-chart');const ctx=canvas.getContext('2d');
   canvas.width=canvas.offsetWidth||340;canvas.height=110;
@@ -1605,15 +1482,27 @@ function openSummaryModal(){
 }
 function closeSummaryModal(){document.getElementById('summary-modal').classList.remove('open');}
 
-function addToHistory(uid,tag){const h=loadHistory();h.unshift({uid,name:tag.name,emoji:tag.emoji||'📦',status:tag.status||'available',scannedAt:new Date().toISOString()});if(h.length>20)h.splice(20);saveHistory(h);}
+// ════════════════════════════════════════════════════════════════
+// HISTORY
+// ════════════════════════════════════════════════════════════════
+function addToHistory(uid,tag){
+  const h=[...cachedHistory];
+  h.unshift({uid,name:tag.name,emoji:tag.emoji||'📦',status:tag.status||'available',scannedAt:new Date().toISOString()});
+  if(h.length>20)h.splice(20);saveHistory(h);
+}
 function openHistoryModal(){
-  const h=loadHistory();const sc={available:'var(--green)',lent:'var(--orange)',lost:'var(--red)'};const sl={available:'DISPO',lent:'PRÊTÉ',lost:'PERDU'};
+  const h=cachedHistory;
+  const sc={available:'var(--green)',lent:'var(--orange)',lost:'var(--red)'};
+  const sl={available:'DISPO',lent:'PRÊTÉ',lost:'PERDU'};
   document.getElementById('history-list').innerHTML=h.length===0?`<div class="empty-state" style="padding:25px"><div class="empty-icon">📋</div>AUCUN SCAN</div>`:h.map(e=>`<div class="history-item" onclick="closeHistoryModal();openDetailModal('${e.uid}')"><span class="h-emoji">${e.emoji}</span><div class="h-info"><div class="h-name">${escHtml(e.name)}</div><div class="h-time">${formatDate(e.scannedAt)}</div></div><span class="h-badge" style="border-color:${sc[e.status]||'var(--muted)'};color:${sc[e.status]||'var(--muted)'}">${sl[e.status]||'—'}</span></div>`).join('');
   document.getElementById('history-modal').classList.add('open');
 }
 function closeHistoryModal(){document.getElementById('history-modal').classList.remove('open');}
 function clearHistory(){if(!confirm('Effacer l\'historique ?'))return;saveHistory([]);closeHistoryModal();showToast('Historique effacé','');}
 
+// ════════════════════════════════════════════════════════════════
+// QR
+// ════════════════════════════════════════════════════════════════
 function openQRModal(uid){
   const db=loadDB(),tag=db[uid];if(!tag)return;currentQRUID=uid;
   document.getElementById('qr-title').textContent=(tag.emoji||'📦')+' '+tag.name;
@@ -1632,11 +1521,15 @@ function downloadQR(){
   showToast('✓ QR téléchargé','success');
 }
 
-function populateCatSelect(sel=''){const cats=loadCats(),s=document.getElementById('cat-select');s.innerHTML=cats.map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${escHtml(c.name)}</option>`).join('');}
-function openCatModal(){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
-  renderCatListUI();document.getElementById('new-cat-name').value='';document.getElementById('cat-modal').classList.add('open');
+// ════════════════════════════════════════════════════════════════
+// CATEGORIES
+// ════════════════════════════════════════════════════════════════
+function populateCatSelect(sel=''){
+  const cats=loadCats(),s=document.getElementById('cat-select');
+  if(!s)return;
+  s.innerHTML=cats.map(c=>`<option value="${c.id}"${c.id===sel?' selected':''}>${escHtml(c.name)}</option>`).join('');
 }
+function openCatModal(){if(!isAdmin())return;renderCatListUI();document.getElementById('new-cat-name').value='';document.getElementById('cat-modal').classList.add('open');}
 function closeCatModal(){document.getElementById('cat-modal').classList.remove('open');}
 function renderCatListUI(){
   const cats=loadCats();
@@ -1653,67 +1546,54 @@ function addCategory(){
   if(!isAdmin())return;
   const name=document.getElementById('new-cat-name').value.trim();if(!name)return;
   const cats=loadCats();if(cats.find(c=>c.name.toLowerCase()===name.toLowerCase())){showToast('Déjà existante','error-t');return;}
-  cats.push({id:'cat_'+Date.now(),name,color:selectedColor});saveCats(cats);renderCatListUI();renderCatTabs();populateCatSelect();
+  cats.push({id:'cat_'+Date.now(),name,color:selectedColor});saveCats(cats);renderCatListUI();
   document.getElementById('new-cat-name').value='';showToast('✓ Catégorie ajoutée','success');
 }
-function deleteCat(id){saveCats(loadCats().filter(c=>c.id!==id));renderCatListUI();renderCatTabs();}
-async function setCatBg(id,e){const file=e.target.files[0];if(!file)return;const b64=await compressPhoto(file,600);const cats=loadCats(),cat=cats.find(c=>c.id===id);if(cat){cat.bgImage=b64;saveCats(cats);renderCatListUI();renderList();showToast('✓ Fond ajouté','success');}}
-function removeCatBg(id){const cats=loadCats(),cat=cats.find(c=>c.id===id);if(cat){delete cat.bgImage;saveCats(cats);renderCatListUI();renderList();}}
+function deleteCat(id){saveCats(loadCats().filter(c=>c.id!==id));renderCatListUI();}
+async function setCatBg(id,e){const file=e.target.files[0];if(!file)return;const b64=await compressPhoto(file,600);const cats=loadCats(),cat=cats.find(c=>c.id===id);if(cat){cat.bgImage=b64;saveCats(cats);renderCatListUI();showToast('✓ Fond ajouté','success');}}
+function removeCatBg(id){const cats=loadCats(),cat=cats.find(c=>c.id===id);if(cat){delete cat.bgImage;saveCats(cats);renderCatListUI();}}
 function buildColorPicker(){const row=document.getElementById('color-row');CAT_COLORS.forEach((c,i)=>{const d=document.createElement('div');d.className='color-pick'+(i===0?' selected':'');d.style.background=c;d.onclick=()=>{selectedColor=c;document.querySelectorAll('.color-pick').forEach(e=>e.classList.toggle('selected',e.style.background===c||e.style.backgroundColor===c));};row.appendChild(d);});}
 
+// ════════════════════════════════════════════════════════════════
+// SETTINGS
+// ════════════════════════════════════════════════════════════════
 function openSettingsModal(){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
-  const s=loadSettings();document.getElementById('s-unseen').value=s.unseenDays||30;document.getElementById('s-lent').value=s.lentDays||7;document.getElementById('s-webhook').value=s.webhook||'';document.getElementById('settings-modal').classList.add('open');
+  if(!isAdmin())return;
+  const s=loadSettings();
+  document.getElementById('s-unseen').value=s.unseenDays||30;
+  document.getElementById('s-lent').value=s.lentDays||7;
+  document.getElementById('s-webhook').value=s.webhook||'';
+  document.getElementById('settings-modal').classList.add('open');
 }
-function clearLocalAccount(){
-  if(!confirm('Supprimer TON compte sur CE téléphone ?\n\nTu seras déconnecté. Tes tags et les autres comptes ne seront pas affectés.')) return;
-  const accounts=loadAccounts();
-  if(currentUser&&accounts[currentUser.username]){
-    delete accounts[currentUser.username];
-    saveAccounts(accounts);
-  }
-  sessionStorage.removeItem(SESSION_KEY);
-  showToast('Compte supprimé sur ce téléphone','');
-  setTimeout(()=>location.reload(),1000);
-}
-
-function clearAllLocalData(){
-  if(!confirm('⚠️ ATTENTION — Effacer TOUTES les données de ce téléphone ?\n\nComptes, tags, historique, tout sera supprimé localement.\n\nCette action est irréversible.')) return;
-  if(!confirm('Dernière confirmation — vraiment tout effacer ?')) return;
-  localStorage.clear();
-  sessionStorage.clear();
-  showToast('Toutes les données effacées','error-t');
-  setTimeout(()=>location.reload(),1000);
-}
-function saveSettings(){const s={unseenDays:parseInt(document.getElementById('s-unseen').value)||30,lentDays:parseInt(document.getElementById('s-lent').value)||7,webhook:document.getElementById('s-webhook').value.trim()};saveSettingsData(s);closeSettingsModal();renderList();showToast('✓ Réglages sauvegardés','success');}
 function closeSettingsModal(){document.getElementById('settings-modal').classList.remove('open');}
+function saveSettings(){const s={unseenDays:parseInt(document.getElementById('s-unseen').value)||30,lentDays:parseInt(document.getElementById('s-lent').value)||7,webhook:document.getElementById('s-webhook').value.trim()};saveSettingsData(s);closeSettingsModal();showToast('✓ Réglages sauvegardés','success');}
+function clearLocalSession(){if(!confirm('Effacer la session locale de ce téléphone ?'))return;sessionStorage.clear();localStorage.clear();showToast('Session effacée','error-t');setTimeout(()=>location.reload(),1000);}
 
-function pingWebhook(tag){const url=loadSettings().webhook;if(!url)return;try{fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid:tag.uid,name:tag.name,status:tag.status||'available',category:tag.category,scannedAt:new Date().toISOString(),app:'NFC TAG DATABASE'})}).catch(()=>{});}catch{}}
+function pingWebhook(tag){const url=loadSettings().webhook;if(!url)return;try{fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid:tag.uid,name:tag.name,status:tag.status||'available',scannedAt:new Date().toISOString()})}).catch(()=>{});}catch{}}
 
 function checkLentReminders(){
-  if(!('Notification' in window))return;
+  if(!('Notification' in window)||!isAdmin())return;
   const db=loadDB(),settings=loadSettings(),limit=settings.lentDays||7,now=Date.now();
   const overdue=Object.values(db).filter(t=>t.status==='lent'&&Math.floor((now-new Date(t.updatedAt||t.createdAt))/(864e5))>=limit);
   if(!overdue.length)return;
-  if(Notification.permission==='granted')overdue.forEach(t=>{const d=Math.floor((now-new Date(t.updatedAt||t.createdAt))/(864e5));new Notification('🟡 Tag toujours prêté',{body:`"${t.name}" est prêté${t.borrower?' à '+t.borrower:''} depuis ${d} jours.`});});
+  if(Notification.permission==='granted')overdue.forEach(t=>{const d=Math.floor((now-new Date(t.updatedAt||t.createdAt))/(864e5));new Notification('🟡 Tag toujours prêté',{body:`"${t.name}"${t.borrower?' à '+t.borrower:''} depuis ${d} jours.`});});
   else if(Notification.permission==='default')Notification.requestPermission().then(p=>{if(p==='granted')checkLentReminders();});
 }
 
 function exportData(){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
   const data={tags:loadDB(),categories:loadCats(),stats:loadStats(),settings:loadSettings(),exportedAt:new Date().toISOString()};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`nfc-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);showToast('✓ Exporté','success');
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`nfc-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href);showToast('✓ Exporté','success');
 }
 function importData(e){
-  if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
-  reader.onload=ev=>{try{const data=JSON.parse(ev.target.result);if(!data.tags)throw new Error();if(!confirm(`Importer ${Object.keys(data.tags).length} tags ?`))return;saveDB({...loadDB(),...data.tags});if(data.categories)saveCats(data.categories);if(data.settings)saveSettingsData(data.settings);renderList();updateStats();renderCatTabs();populateCatSelect();showToast('✓ Import réussi','success');}catch{showToast('✕ Fichier invalide','error-t');}};
+  reader.onload=ev=>{try{const data=JSON.parse(ev.target.result);if(!data.tags)throw new Error();if(!confirm(`Importer ${Object.keys(data.tags).length} tags ?`))return;saveDB({...loadDB(),...data.tags});if(data.categories)saveCats(data.categories);if(data.settings)saveSettingsData(data.settings);showToast('✓ Import réussi','success');}catch{showToast('✕ Fichier invalide','error-t');}};
   reader.readAsText(file);e.target.value='';
 }
 
 // ════════════════════════════════════════════════════════════════
-// PHOTO & FORM HELPERS
+// PHOTO
 // ════════════════════════════════════════════════════════════════
 async function handlePhotoUpload(e){const file=e.target.files[0];if(!file)return;currentPhoto=await compressPhoto(file,480);const p=document.getElementById('photo-preview');p.src=currentPhoto;p.style.display='block';document.getElementById('photo-label').style.display='none';document.getElementById('photo-remove').style.display='block';}
 function removePhoto(e){e.stopPropagation();e.preventDefault();currentPhoto=null;resetPhotoUI();}
@@ -1723,23 +1603,14 @@ function selectStatus(v){selectedStatus=v;applyStatusUI(v);}
 function applyStatusUI(v){document.querySelectorAll('.status-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===v));document.getElementById('borrower-field').style.display=v==='lent'?'block':'none';}
 
 // ════════════════════════════════════════════════════════════════
-// PIN (admin extra security layer)
+// PIN
 // ════════════════════════════════════════════════════════════════
 function hashPIN(p){let h=0;for(let i=0;i<p.length;i++){h=((h<<5)-h)+p.charCodeAt(i);h|=0;}return h.toString(36);}
 function getSavedPIN(){return localStorage.getItem(PIN_KEY);}
 function initPIN(){updateLockBtn();}
-function updateLockBtn(){const btn=document.getElementById('lock-btn');if(!btn)return;const ps=!!getSavedPIN();btn.textContent=ps?'🔒':'🔓';btn.title=ps?'PIN actif':'Aucun PIN — cliquer pour en créer un';}
-function lockApp(){
-  const hasPIN=!!getSavedPIN();
-  if(!hasPIN){if(confirm('Créer un code PIN pour sécuriser les actions admin ?'))startChangePIN();}
-  else{if(confirm('OK = Changer le PIN | Annuler = Supprimer'))startChangePIN();else if(confirm('Supprimer le PIN définitivement ?')){localStorage.removeItem(PIN_KEY);updateLockBtn();showToast('PIN supprimé','');}}
-}
-function requirePIN(cb){
-  if(sessionStorage.getItem('nfc_trusted')==='1'){if(cb)cb();return;}
-  const s=getSavedPIN();
-  if(!s){if(cb)cb();return;} // Pas de PIN défini → action directe
-  else openPINVerify(cb);
-}
+function updateLockBtn(){const btn=document.getElementById('lock-btn');if(!btn)return;const ps=!!getSavedPIN();btn.textContent=ps?'🔒':'🔓';btn.title=ps?'PIN actif':'Aucun PIN';}
+function lockApp(){const hasPIN=!!getSavedPIN();if(!hasPIN){if(confirm('Créer un code PIN ?'))startChangePIN();}else{if(confirm('OK = Changer | Annuler = Supprimer'))startChangePIN();else if(confirm('Supprimer le PIN ?')){localStorage.removeItem(PIN_KEY);updateLockBtn();showToast('PIN supprimé','');}}}
+function requirePIN(cb){if(sessionStorage.getItem('nfc_trusted')==='1'){if(cb)cb();return;}const s=getSavedPIN();if(!s){if(cb)cb();return;}else openPINVerify(cb);}
 function openPINVerify(cb){pinMode='verify';pinCallback=cb;pinBuffer='';document.getElementById('pin-icon').textContent='🔒';document.getElementById('pin-title').textContent='CODE PIN';document.getElementById('pin-subtitle').textContent='ENTREZ VOTRE PIN';document.getElementById('pin-cancel-btn').style.display='inline-block';document.getElementById('pin-change-btn').style.display='inline-block';document.getElementById('pin-error').textContent='';updatePINDots('');document.getElementById('pin-overlay').classList.add('open');}
 function startSetPIN(cb){pinMode='set';pinStep=0;pinFirstEntry='';pinBuffer='';pinCallback=cb;document.getElementById('pin-icon').textContent='🔐';document.getElementById('pin-title').textContent='CRÉER UN PIN';document.getElementById('pin-subtitle').textContent='CODE À 4 CHIFFRES';document.getElementById('pin-cancel-btn').style.display='inline-block';document.getElementById('pin-change-btn').style.display='none';document.getElementById('pin-error').textContent='';updatePINDots('');document.getElementById('pin-overlay').classList.add('open');}
 function startChangePIN(){closePIN();setTimeout(()=>startSetPIN(null),100);}
@@ -1749,26 +1620,12 @@ function pinDel(){if(!pinBuffer.length)return;pinBuffer=pinBuffer.slice(0,-1);up
 function updatePINDots(buf){for(let i=0;i<4;i++){const d=document.getElementById('pd'+i);d.className='pin-dot'+(i<buf.length?' filled':'');}}
 function processPIN(){
   if(pinMode==='verify'){
-    if(hashPIN(pinBuffer)===getSavedPIN()){
-      dotsSuccess();
-      setTimeout(()=>{const cb=pinCallback;closePIN();if(cb)cb();},300);
-    }else{dotsError();document.getElementById('pin-error').textContent='PIN INCORRECT';pinBuffer='';setTimeout(()=>updatePINDots(''),500);}
+    if(hashPIN(pinBuffer)===getSavedPIN()){dotsSuccess();setTimeout(()=>{const cb=pinCallback;closePIN();if(cb)cb();},300);}
+    else{dotsError();document.getElementById('pin-error').textContent='PIN INCORRECT';pinBuffer='';setTimeout(()=>updatePINDots(''),500);}
   }else if(pinMode==='set'){
-    if(pinStep===0){
-      pinFirstEntry=pinBuffer;pinBuffer='';pinStep=1;
-      document.getElementById('pin-subtitle').textContent='CONFIRMEZ VOTRE PIN';
-      document.getElementById('pin-error').textContent='';updatePINDots('');
-    }else{
-      if(pinBuffer===pinFirstEntry){
-        localStorage.setItem(PIN_KEY,hashPIN(pinBuffer));updateLockBtn();dotsSuccess();
-        setTimeout(()=>{const cb=pinCallback;closePIN();showToast('✓ PIN défini','success');if(cb)cb();},400);
-      }else{
-        dotsError();document.getElementById('pin-error').textContent='PINS DIFFÉRENTS';
-        pinBuffer='';pinStep=0;pinFirstEntry='';
-        document.getElementById('pin-subtitle').textContent='RÉESSAYEZ';
-        setTimeout(()=>updatePINDots(''),500);
-      }
-    }
+    if(pinStep===0){pinFirstEntry=pinBuffer;pinBuffer='';pinStep=1;document.getElementById('pin-subtitle').textContent='CONFIRMEZ';document.getElementById('pin-error').textContent='';updatePINDots('');}
+    else{if(pinBuffer===pinFirstEntry){localStorage.setItem(PIN_KEY,hashPIN(pinBuffer));updateLockBtn();dotsSuccess();setTimeout(()=>{const cb=pinCallback;closePIN();showToast('✓ PIN défini','success');if(cb)cb();},400);}
+    else{dotsError();document.getElementById('pin-error').textContent='PINS DIFFÉRENTS';pinBuffer='';pinStep=0;pinFirstEntry='';document.getElementById('pin-subtitle').textContent='RÉESSAYEZ';setTimeout(()=>updatePINDots(''),500);}}
   }
 }
 function dotsError(){for(let i=0;i<4;i++)document.getElementById('pd'+i).className='pin-dot error';}
@@ -1776,39 +1633,17 @@ function dotsSuccess(){for(let i=0;i<4;i++)document.getElementById('pd'+i).class
 document.addEventListener('keydown',e=>{if(!document.getElementById('pin-overlay').classList.contains('open'))return;if(e.key>='0'&&e.key<='9')pinKey(e.key);else if(e.key==='Backspace')pinDel();else if(e.key==='Escape')closePIN();});
 
 // ════════════════════════════════════════════════════════════════
-// THEME & HELPERS
+// DROPDOWN
 // ════════════════════════════════════════════════════════════════
-function initTheme(){applyTheme(localStorage.getItem(THEME_KEY)||'dark');}
-function toggleTheme(){const l=document.body.classList.contains('light');applyTheme(l?'dark':'light');localStorage.setItem(THEME_KEY,l?'dark':'light');}
-function applyTheme(t){
-  document.body.classList.toggle('light',t==='light');
-  const icon=t==='light'?'🌙':'☀️';
-  ['theme-btn','theme-btn-u'].forEach(id=>{const b=document.getElementById(id);if(b)b.textContent=icon;});
-}
-
-function setScanUI(active){const btn=document.getElementById('scan-btn'),label=document.getElementById('scan-label');const w=`<span class="scan-waves"><span class="wave-ring"></span><span class="wave-ring"></span><span class="wave-ring"></span></span>`;btn.classList.toggle('scanning',active);label.innerHTML=w+(active?'&nbsp;&nbsp;APPROCHEZ UN TAG':'&nbsp;&nbsp;SCANNER UN TAG');}
-function setStatus(type,msg){document.getElementById('sd').className='status-dot'+(type?' '+type:'');document.getElementById('status-text').textContent=msg;}
-let toastTimer;
-function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.className='toast',3000);}
-function highlightCard(uid){setTimeout(()=>{const c=document.querySelector(`[data-uid="${uid}"]`);if(c){c.classList.add('highlight');setTimeout(()=>c.classList.remove('highlight'),2000);}},100);}
-function flashInput(id){const el=document.getElementById(id);el.style.borderBottomColor='var(--red)';setTimeout(()=>el.style.borderBottomColor='',1000);}
-function formatDate(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
-function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function genUID(){return Array.from({length:7},()=>Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()).join(':');}
-function buildEmojiPicker(){const row=document.getElementById('emoji-row');EMOJIS.forEach(e=>{const b=document.createElement('button');b.className='emoji-btn';b.textContent=e;b.onclick=()=>{selectedEmoji=e;document.querySelectorAll('.emoji-btn').forEach(x=>x.classList.toggle('selected',x.textContent===e));};row.appendChild(b);});}
-
 function toggleDropdown(id,btnEl){
-  const dd=document.getElementById(id);
-  if(!dd)return;
+  const dd=document.getElementById(id);if(!dd)return;
   const isOpen=dd.classList.contains('open');
   closeAllDropdowns();
   if(!isOpen){
     dd.classList.add('open');
-    // Position relative to button
     const rect=btnEl.getBoundingClientRect();
-    const ddH=280; // estimated height
     const spaceBelow=window.innerHeight-rect.bottom;
-    const top=spaceBelow>ddH ? rect.bottom+2 : rect.top-ddH-2;
+    const top=spaceBelow>260?rect.bottom+2:rect.top-280;
     dd.style.top=Math.max(4,top)+'px';
     dd.style.right=(window.innerWidth-rect.right)+'px';
     dd.style.left='auto';
@@ -1817,14 +1652,29 @@ function toggleDropdown(id,btnEl){
 function closeAllDropdowns(){document.querySelectorAll('.tag-dropdown.open').forEach(d=>d.classList.remove('open'));}
 document.addEventListener('click',()=>closeAllDropdowns());
 
+// ════════════════════════════════════════════════════════════════
+// THEME
+// ════════════════════════════════════════════════════════════════
+function initTheme(){applyTheme(localStorage.getItem(THEME_KEY)||'dark');}
+function toggleTheme(){const l=document.body.classList.contains('light');applyTheme(l?'dark':'light');localStorage.setItem(THEME_KEY,l?'dark':'light');}
+function applyTheme(t){document.body.classList.toggle('light',t==='light');['theme-btn','theme-btn-u'].forEach(id=>{const b=document.getElementById(id);if(b)b.textContent=t==='light'?'🌙':'☀️';});}
+
+// ════════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════════
+function setScanUI(active){const btn=document.getElementById('scan-btn'),label=document.getElementById('scan-label');const w=`<span class="scan-waves"><span class="wave-ring"></span><span class="wave-ring"></span><span class="wave-ring"></span></span>`;btn.classList.toggle('scanning',active);label.innerHTML=w+(active?'&nbsp;&nbsp;APPROCHEZ UN TAG':'&nbsp;&nbsp;SCANNER UN TAG');}
+function setStatus(type,msg){document.getElementById('sd').className='status-dot'+(type?' '+type:'');document.getElementById('status-text').textContent=msg;}
+let toastTimer;
+function showToast(msg,type=''){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show '+type;clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.className='toast',3500);}
+function formatDate(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function genUID(){return Array.from({length:7},()=>Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()).join(':');}
+function buildEmojiPicker(){const row=document.getElementById('emoji-row');EMOJIS.forEach(e=>{const b=document.createElement('button');b.className='emoji-btn';b.textContent=e;b.onclick=()=>{selectedEmoji=e;document.querySelectorAll('.emoji-btn').forEach(x=>x.classList.toggle('selected',x.textContent===e));};row.appendChild(b);});}
+function flashInput(id){const el=document.getElementById(id);el.style.borderBottomColor='var(--red)';setTimeout(()=>el.style.borderBottomColor='',1000);}
+
 ['scan-action-modal','register-modal','detail-modal','return-modal','history-modal','qr-modal','cat-modal','settings-modal','summary-modal','users-modal','share-modal'].forEach(id=>{
   const el=document.getElementById(id);if(el)el.addEventListener('click',e=>{if(e.target===e.currentTarget)el.classList.remove('open');});
 });
-
-// ════════════════════════════════════════════════════════════════
-// BOOT
-// ════════════════════════════════════════════════════════════════
-window.addEventListener('DOMContentLoaded',()=>{initTheme();initAccounts();});
 </script>
 </body>
 </html>
