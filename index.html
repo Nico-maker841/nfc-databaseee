@@ -678,6 +678,16 @@ body.light .stat-val{text-shadow:none;}
       <div class="settings-row"><label class="settings-lbl">RAPPEL PRÊT DEPUIS (JOURS)</label><input type="number" class="fi" id="s-lent" value="7" min="1" max="365" style="margin-bottom:4px;"/><span class="settings-hint">Notification si un objet est prêté trop longtemps.</span></div>
       <div class="mst">WEBHOOK</div>
       <div class="settings-row"><label class="settings-lbl">URL WEBHOOK</label><input type="text" class="fi" id="s-webhook" placeholder="https://..." style="margin-bottom:4px;"/><span class="settings-hint">POST JSON envoyé à chaque scan. Compatible Discord, Zapier…</span></div>
+      <div class="mst" style="color:var(--red);border-color:rgba(255,61,90,.3);">⚠ ZONE DANGER — CE TÉLÉPHONE</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--muted);line-height:1.7;margin-bottom:10px;">
+        Ces actions effacent uniquement les données stockées <strong style="color:var(--text);">sur ce téléphone</strong>. Utile pour supprimer un vieux compte ou repartir de zéro.
+      </div>
+      <button onclick="clearLocalAccount()" style="width:100%;padding:11px;background:transparent;border:1px solid var(--orange);color:var(--orange);font-family:var(--mono);font-size:10px;letter-spacing:2px;cursor:pointer;margin-bottom:8px;">
+        🗑 SUPPRIMER MON COMPTE SUR CE TÉLÉPHONE
+      </button>
+      <button onclick="clearAllLocalData()" style="width:100%;padding:11px;background:transparent;border:1px solid var(--red);color:var(--red);font-family:var(--mono);font-size:10px;letter-spacing:2px;cursor:pointer;">
+        💣 EFFACER TOUTES LES DONNÉES DE CE TÉLÉPHONE
+      </button>
     </div>
     <div class="ma"><button class="bs" onclick="closeSettingsModal()">ANNULER</button><button class="bp" onclick="saveSettings()">SAUVEGARDER</button></div>
   </div>
@@ -1655,8 +1665,28 @@ function openSettingsModal(){
   if(!isAdmin()){showToast('⛔ Action réservée à l\'admin','error-t');return;}
   const s=loadSettings();document.getElementById('s-unseen').value=s.unseenDays||30;document.getElementById('s-lent').value=s.lentDays||7;document.getElementById('s-webhook').value=s.webhook||'';document.getElementById('settings-modal').classList.add('open');
 }
-function closeSettingsModal(){document.getElementById('settings-modal').classList.remove('open');}
+function clearLocalAccount(){
+  if(!confirm('Supprimer TON compte sur CE téléphone ?\n\nTu seras déconnecté. Tes tags et les autres comptes ne seront pas affectés.')) return;
+  const accounts=loadAccounts();
+  if(currentUser&&accounts[currentUser.username]){
+    delete accounts[currentUser.username];
+    saveAccounts(accounts);
+  }
+  sessionStorage.removeItem(SESSION_KEY);
+  showToast('Compte supprimé sur ce téléphone','');
+  setTimeout(()=>location.reload(),1000);
+}
+
+function clearAllLocalData(){
+  if(!confirm('⚠️ ATTENTION — Effacer TOUTES les données de ce téléphone ?\n\nComptes, tags, historique, tout sera supprimé localement.\n\nCette action est irréversible.')) return;
+  if(!confirm('Dernière confirmation — vraiment tout effacer ?')) return;
+  localStorage.clear();
+  sessionStorage.clear();
+  showToast('Toutes les données effacées','error-t');
+  setTimeout(()=>location.reload(),1000);
+}
 function saveSettings(){const s={unseenDays:parseInt(document.getElementById('s-unseen').value)||30,lentDays:parseInt(document.getElementById('s-lent').value)||7,webhook:document.getElementById('s-webhook').value.trim()};saveSettingsData(s);closeSettingsModal();renderList();showToast('✓ Réglages sauvegardés','success');}
+function closeSettingsModal(){document.getElementById('settings-modal').classList.remove('open');}
 
 function pingWebhook(tag){const url=loadSettings().webhook;if(!url)return;try{fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({uid:tag.uid,name:tag.name,status:tag.status||'available',category:tag.category,scannedAt:new Date().toISOString(),app:'NFC TAG DATABASE'})}).catch(()=>{});}catch{}}
 
